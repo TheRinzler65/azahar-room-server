@@ -3,6 +3,7 @@ import { Window } from '../../components/Window';
 import { DataTable } from '../../components/DataTable';
 import { API } from '../../config';
 import { authHeaders } from '../../utils/auth';
+import { fromGameIdNumber } from '../../utils/gameId';
 
 interface LobbyRoom {
     id: string;
@@ -69,7 +70,6 @@ export const AdminLobby = () => {
     const loadChat = (lobby: LobbyRoom) => {
         stopPoll();
         setSelected(lobby);
-        // Chat is keyed by the config slug when the lobby is backed by a managed room (same port).
         const cfg = configs.find(c => c.port === lobby.port);
         if (cfg) {
             setChatSource(cfg.slug);
@@ -103,12 +103,13 @@ export const AdminLobby = () => {
                     <input className="bg-neutral-900 text-neutral-200 border border-border p-1.5 font-mono text-xs flex-1 focus:outline-none" placeholder="Search room name..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
                 <DataTable
-                    columns={['NAME', 'OWNER', 'PORT', 'GAME', 'PLAYERS', 'PASSWORD', 'LAST SEEN', 'STATUS', '']}
+                    columns={['NAME', 'OWNER', 'PORT', 'GAME', 'GAME ID', 'PLAYERS', 'PASSWORD', 'LAST SEEN', 'STATUS', '']}
                     data={filtered.map(r => ({
                         name: <span className="text-neutral-200">{r.name}</span>,
                         owner: <span className="text-sky-400">{r.owner || '-'}</span>,
                         port: <span className="text-orange-400">{r.port}</span>,
                         game: <span className="text-orange-400">{r.preferred_game_name || '-'}</span>,
+                        'game id': <span className="text-neutral-500 text-[10px]">{r.preferred_game_id ? fromGameIdNumber(r.preferred_game_id) : '-'}</span>,
                         players: <span className="text-green-500">{r.max_players}</span>,
                         password: <span className={r.has_password ? 'text-orange-400' : 'text-neutral-600'}>{r.has_password ? 'yes' : 'no'}</span>,
                         'last seen': <span className="text-neutral-500 text-[10px]">{new Date(r.last_seen).toLocaleString()}</span>,
