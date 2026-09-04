@@ -2,23 +2,35 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Window } from '../components/Window';
 import { API } from '../config';
+import { registerSchema } from '../schemas/auth';
 
 export const RegisterPage = () => {
     const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const [generatedToken, setGeneratedToken] = useState('');
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (username.length < 3) { setError('Username too short (min 3)'); return; }
+        setError('');
+
+        const validation = registerSchema.safeParse({ username, password });
+        if (!validation.success) {
+            const firstIssue = validation.error.issues[0];
+            setError(firstIssue?.message || 'Invalid registration form');
+            return;
+        }
+
+        setLoading(true);
         try {
             const res = await fetch(`${API}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify(validation.data),
             });
+
             if (res.ok) {
                 const data = await res.json();
                 sessionStorage.setItem('azahar_player_jwt', data.token);
@@ -29,7 +41,9 @@ export const RegisterPage = () => {
                 setError(msg || 'Registration failed');
             }
         } catch {
-            setError('Registration error');
+            setError('Unable to reach server. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -68,7 +82,9 @@ export const RegisterPage = () => {
                             className="bg-neutral-900 text-neutral-200 border border-border p-2 w-full mt-1 focus:outline-none focus:border-sky-500"
                             value={username}
                             onChange={e => setUsername(e.target.value)}
+                            placeholder="3-20 chars (letters, numbers, _, -)"
                             autoFocus
+                            disabled={loading}
                         />
                     </div>
                     <div>
@@ -78,11 +94,17 @@ export const RegisterPage = () => {
                             className="bg-neutral-900 text-neutral-200 border border-border p-2 w-full mt-1 focus:outline-none focus:border-sky-500"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
+                            placeholder="Min. 8 characters"
+                            disabled={loading}
                         />
                     </div>
                     {error && <div className="text-red-400">{error}</div>}
-                    <button className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-4 py-2 border border-sky-700 w-full">
-                        CREATE ACCOUNT
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-4 py-2 border border-sky-700 w-full disabled:opacity-50"
+                    >
+                        {loading ? 'CREATING...' : 'CREATE ACCOUNT'}
                     </button>
                     <div className="text-center text-neutral-500">
                         Already have an account? <Link to="/login" className="text-sky-400 hover:underline">sign in</Link>
