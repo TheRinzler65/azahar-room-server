@@ -2,7 +2,6 @@ import { loadEnv } from '../env';
 
 loadEnv();
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
 const BOT_NAME = 'Azahar Sentinel';
 const BOT_AVATAR = 'https://raw.githubusercontent.com/azahar-emu/azahar/master/dist/azahar.png';
 
@@ -32,22 +31,27 @@ interface WebhookOptions {
 const queue: Record<string, any>[] = [];
 let isProcessing = false;
 
+function getWebhookUrl(): string {
+    return process.env.DISCORD_WEBHOOK_URL || '';
+}
+
 async function processQueue(): Promise<void> {
-    if (isProcessing || queue.length === 0 || !DISCORD_WEBHOOK_URL) return;
+    const webhookUrl = getWebhookUrl();
+    if (isProcessing || queue.length === 0 || !webhookUrl) return;
     isProcessing = true;
 
     while (queue.length > 0) {
         const payload = queue[0];
 
         try {
-            const res = await fetch(DISCORD_WEBHOOK_URL, {
+            const res = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
             if (res.status === 429) {
-                const retryData = await res.json().catch(() => ({ retry_after: 2 }));
+                const retryData = (await res.json().catch(() => ({ retry_after: 2 }))) as { retry_after?: number };
                 const waitTime = Math.ceil((retryData.retry_after || 2) * 1000);
                 console.warn(`[Discord Webhook] Rate limited. Retrying after ${waitTime}ms...`);
                 await new Promise((resolve) => setTimeout(resolve, waitTime));
@@ -71,7 +75,7 @@ async function processQueue(): Promise<void> {
 }
 
 export async function sendDiscordEmbed(opts: WebhookOptions): Promise<void> {
-    if (!DISCORD_WEBHOOK_URL) return;
+    if (!getWebhookUrl()) return;
 
     const theme = THEMES[opts.level || 'info'];
 
@@ -160,7 +164,7 @@ export async function notifyRoomStatus(
         fields: [
             { name: 'Room Name', value: `**${roomName}**`, inline: true },
             { name: 'Port', value: `\`${port}\``, inline: true },
-            { name: 'Protocol', value: `\`azahar://localhost:${port}\``, inline: false },
+            { name: 'Direct Connect', value: `\`<server-ip>:${port}\``, inline: false },
         ],
     });
 }
@@ -184,7 +188,7 @@ export async function notifySecurityEvent(
 }
 
 export async function notifyDiscord(content: string): Promise<void> {
-    if (!DISCORD_WEBHOOK_URL) return;
+    if (!getWebhookUrl()) return;
     await sendDiscordEmbed({
         title: 'System Notice',
         description: content,

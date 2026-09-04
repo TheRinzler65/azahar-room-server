@@ -1,7 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import http from 'http';
 import { Tail } from 'tail';
 import { loadEnv } from './env';
 import {
@@ -9,9 +8,11 @@ import {
     listRoomConfigs, listRoomInstances, getRoomInstanceByConfig,
     setRoomConfigStatus, createRoomInstance, updateRoomInstance, deleteRoomInstance,
 } from './db/rooms';
-import { broadcastNotification } from './ws';
+import { broadcastChat, broadcastNotification } from './ws';
 import { filterChatMessage } from './utils/chatFilter';
 import { notifyRoomCrash } from './utils/discord';
+import { chatLogs } from './state';
+import { addChatMessage } from './db/chat';
 
 loadEnv();
 
@@ -31,44 +32,55 @@ const MAX_RESTART_ATTEMPTS = 3;
 const CRASH_WINDOW_MS = 60_000;
 const BASE_RESTART_DELAY_MS = 3_000;
 
-const chatRegex = /HandleChatPacket:\d+:\s*([^:]+):\s*(.*)$/;
+const chatRegexes = [
+    /HandleChatPacket:\d+:\s*([^:]+):\s*(.*)$/,
+    /HandleChatPacket.*?:\s*([^:]+):\s*(.*)$/,
+    /\[Chat\]\s*([^:]+):\s*(.*)$/,
+    /Received chat message from\s+([^:]+):\s*(.*)$/,
+    /RoomMember::SendChatMessage:\s*([^:]+):\s*(.*)$/
+];
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../..');
 
-function postChat(roomId: string, username: string, message: string) {
-    const body = JSON.stringify({ username, message });
-    const req = http.request({
-        hostname: '127.0.0.1', port: 3000, path: `/chat/${roomId}`,
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-    });
-    req.on('error', (e) => console.error(`[chatRelay] postChat error: ${e.message}`));
-    req.on('response', (r) => r.resume());
-    req.write(body);
-    req.end();
+function dispatchChat(cfg: RoomConfigRow, rawUsername: string, rawMessage: string) {
+    const username = rawUsername.trim();
+    const text = rawMessage.trim();
+    if (!username || !text) return;
+
+    const { clean: message, flagged } = filterChatMessage(text);
+    if (flagged) {
+        console.log(`[chatRelay] [Automod] Message assaini pour slug=${cfg.slug} user=${username}`);
+    }
+
+    const roomId = announcedRoom.get(cfg.id) || null;
+    const now = Date.now();
+
+    const entry = { username, message, timestamp: now };
+    if (!chatLogs[cfg.slug]) chatLogs[cfg.slug] = [];
+    chatLogs[cfg.slug].push(entry);
+    if (chatLogs[cfg.slug].length > 100) chatLogs[cfg.slug].shift();
+
+    if (roomId) {
+        if (!chatLogs[roomId]) chatLogs[roomId] = [];
+        chatLogs[roomId].push(entry);
+        if (chatLogs[roomId].length > 100) chatLogs[roomId].shift();
+    }
+
+    addChatMessage(roomId || cfg.slug, cfg.slug, username, message);
+
+    console.log(`[chatRelay] BROADCAST room=${cfg.slug} (id=${roomId}) user=${username} msg="${message}"`);
+    broadcastChat(cfg.slug, roomId, username, message, now);
 }
 
 function getBanFile(slug: string): string {
     if (process.env.BANLIST_PATH) return process.env.BANLIST_PATH;
     const localBan = path.join(PROJECT_ROOT, 'banlist.txt');
     if (fs.existsSync(localBan)) return localBan;
-    return '/opt/azahar/banlist.txt';
+    return path.join(process.cwd(), 'banlist.txt');
 }
 
 export function formatGameId(id: number): string {
     return `0x${BigInt(id).toString(16).padStart(16, '0')}`;
-}
-
-if (require.main === module) {
-    const cases: [number, string][] = [
-        [1125899906842624, '0x0004000000000000'],
-        [0, '0x0000000000000000'],
-        [255, '0x00000000000000ff'],
-    ];
-    for (const [n, want] of cases) {
-        const got = formatGameId(n);
-        if (got !== want) { console.error(`FAIL formatGameId(${n}): got ${got}, want ${want}`); process.exit(1); }
-        console.log(`ok formatGameId(${n}) -> ${got}`);
-    }
 }
 
 function ensureLogFile(slug: string): string {
@@ -80,20 +92,15 @@ function ensureLogFile(slug: string): string {
 }
 
 function parseChatStream(cfg: RoomConfigRow, chunk: Buffer) {
-    const lines = chunk.toString().split('\n');
-    for (const line of lines) {
+    const lines = chunk.toString().split(/\r?\n/);
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
         if (!line) continue;
-        const match = line.match(chatRegex);
-        if (match) {
-            const username = match[1].trim();
-            const rawMessage = match[2].trim();
-            if (username && rawMessage) {
-                const { clean: message, flagged } = filterChatMessage(rawMessage);
-                if (flagged) {
-                    console.log(`[chatRelay] [Automod] Message assaini pour slug=${cfg.slug} user=${username}`);
-                }
-                console.log(`[chatRelay] SEND slug=${cfg.slug} user=${username} msg=${message}`);
-                postChat(cfg.slug, username, message);
+        for (const regex of chatRegexes) {
+            const match = line.match(regex);
+            if (match) {
+                dispatchChat(cfg, match[1], match[2]);
+                break;
             }
         }
     }
@@ -104,22 +111,19 @@ function attachChatWatcher(cfg: RoomConfigRow) {
     const logFile = ensureLogFile(cfg.slug);
     const tail = new Tail(logFile);
     watchers.set(cfg.id, tail);
-    tail.on('line', (line: string) => {
-        const match = line.match(chatRegex);
-        if (match) {
-            const roomId = announcedRoom.get(cfg.id);
-            const username = match[1].trim();
-            const rawMessage = match[2].trim();
-            if (roomId && username && rawMessage) {
-                const { clean: message, flagged } = filterChatMessage(rawMessage);
-                if (flagged) {
-                    console.log(`[chatRelay] [Automod] Message watcher assaini pour room=${cfg.slug} user=${username}`);
-                }
-                console.log(`[chatRelay] match: room=${cfg.slug} roomId=${roomId} user=${username} msg=${message}`);
-                postChat(roomId, username, message);
+
+    tail.on('line', (rawLine: string) => {
+        const line = rawLine.trim();
+        if (!line) return;
+        for (const regex of chatRegexes) {
+            const match = line.match(regex);
+            if (match) {
+                dispatchChat(cfg, match[1], match[2]);
+                break;
             }
         }
     });
+
     tail.on('error', (e: any) => console.error(`[chatRelay] tail error on ${logFile}: ${e.message}`));
 }
 
@@ -129,8 +133,6 @@ function buildArgs(cfg: RoomConfigRow): string[] {
     const username = process.env.ROOM_USERNAME || 'Rinzler';
     const token = process.env.ROOM_TOKEN || '';
     const apiUrl = process.env.ROOM_API_URL || 'http://127.0.0.1:3000';
-
-    console.log(`[RoomManager Debug] Launching room with User: "${username}" and Token: "${token}"`);
 
     const args = [
         '--room-name', cfg.name,
@@ -161,14 +163,14 @@ function handleAutoRestart(cfg: RoomConfigRow) {
     notifyRoomCrash(cfg.name, tracker.attempts, MAX_RESTART_ATTEMPTS);
 
     if (tracker.attempts > MAX_RESTART_ATTEMPTS) {
-        console.error(`[RoomManager] Room "${cfg.name}" a crashé trop souvent (${tracker.attempts} fois). Abandon de la relance.`);
+        console.error(`[RoomManager] Room "${cfg.name}" a crashé trop souvent (${tracker.attempts} fois). Auto-restart désactivé.`);
         broadcastNotification(`Room "${cfg.name}" a crashé de manière répétée. Auto-restart désactivé.`);
         restartTrackers.delete(cfg.id);
         return;
     }
 
     const delay = BASE_RESTART_DELAY_MS * Math.pow(2, tracker.attempts - 1);
-    console.log(`[RoomManager] Tentative de relance pour "${cfg.name}" (tentative ${tracker.attempts}/${MAX_RESTART_ATTEMPTS}) dans ${delay / 1000}s...`);
+    console.log(`[RoomManager] Tentative de relance pour "${cfg.name}" (${tracker.attempts}/${MAX_RESTART_ATTEMPTS}) dans ${delay / 1000}s...`);
     broadcastNotification(`Room "${cfg.name}" s'est arrêtée. Relance automatique dans ${delay / 1000}s.`);
 
     tracker.timer = setTimeout(async () => {

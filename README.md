@@ -20,13 +20,13 @@ A Node.js/TypeScript API + a React admin dashboard for managing rooms, players, 
 
 ## Tech stack
 
-| Layer | Tech |
-|---|---|
-| API | Node.js, Express, TypeScript, MySQL2 |
-| Dashboard | React, Vite, TailwindCSS |
-| Real-time | WebSocket (`ws`) |
-| Notifications | Discord Webhooks |
-| Process mgmt | PM2 / Child processes |
+| Layer         | Tech                                 |
+| ------------- | ------------------------------------ |
+| API           | Node.js, Express, TypeScript, MySQL2 |
+| Dashboard     | React, Vite, TailwindCSS             |
+| Real-time     | WebSocket (`ws`)                     |
+| Notifications | Discord Webhooks                     |
+| Process mgmt  | PM2 / Child processes                |
 
 ---
 
@@ -130,13 +130,13 @@ azahar-room-server/
 
 ## Environment configuration
 
-| Variable | Description | Default / Example |
-|---|---|---|
-| `NODE_ENV` | Runtime mode (`production` / `development`) | `development` |
-| `ADMIN_TOKEN` | Master password for `/admin/login` | Required in production |
-| `DISCORD_WEBHOOK_URL` | Channel webhook for crash & ban alerts | `https://discord.com/api/webhooks/...` |
-| `ROOM_BINARY` | Path to the azahar-room executable | `/opt/azahar/azahar-room` |
-| `BANLIST_PATH` | Sync path for the plaintext banlist | `/opt/azahar/banlist.txt` |
+| Variable              | Description                                 | Default / Example                      |
+| --------------------- | ------------------------------------------- | -------------------------------------- |
+| `NODE_ENV`            | Runtime mode (`production` / `development`) | `development`                          |
+| `ADMIN_TOKEN`         | Master password for `/admin/login`          | Required in production                 |
+| `DISCORD_WEBHOOK_URL` | Channel webhook for crash & ban alerts      | `https://discord.com/api/webhooks/...` |
+| `ROOM_BINARY`         | Path to the azahar-room executable          | `/opt/azahar/azahar-room`              |
+| `BANLIST_PATH`        | Sync path for the plaintext banlist         | `/opt/azahar/banlist.txt`              |
 
 ---
 

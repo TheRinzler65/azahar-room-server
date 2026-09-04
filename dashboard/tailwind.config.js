@@ -4,15 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        main: '#31363b', 
-        panel: '#1a1a1a',
-        title: '#262626',
-        border: '#404040',
+        main: "#31363b",
+        panel: "#1a1a1a",
+        title: "#262626",
+        border: "#404040",
       },
       borderRadius: {
-        'sm': '2px',
-      }
+        sm: "2px",
+      },
     },
   },
   plugins: [],
-}
+};
