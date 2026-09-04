@@ -14,7 +14,7 @@ interface Room {
     preferredGameName: string;
     maxPlayers: number;
     players?: PlayerCount[];
-    address: string;
+    address?: string;
     port: number;
     owner?: string;
 }
@@ -29,6 +29,13 @@ const StatCard = ({ label, value, color }: { label: string; value: string | numb
 export const Home = () => {
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+    const copyAddress = (addressText: string, index: number) => {
+        navigator.clipboard.writeText(addressText);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 1500);
+    };
 
     useEffect(() => {
         const fetchRooms = () => {
@@ -84,39 +91,64 @@ export const Home = () => {
                             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
                         </div>
                     ) : (
-                    <table className="w-full text-xs text-left border-collapse border border-border">
+                    <table className="w-full text-xs text-left border-collapse border border-border font-mono">
                         <thead>
                             <tr className="bg-neutral-800 text-neutral-400">
                                 <th className="p-2 border border-border">ROOM</th>
                                 <th className="p-2 border border-border hidden sm:table-cell">HOST</th>
                                 <th className="p-2 border border-border">GAME</th>
                                 <th className="p-2 border border-border">PLAYERS</th>
+                                <th className="p-2 border border-border text-center">ACTION</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {rooms.map((r, i) => (
-                                <tr key={i} className={`${i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950'} hover:bg-sky-900/40`}>
-                                    <td className="p-2 border border-border text-neutral-200 font-bold">{r.name}</td>
-                                    <td className="p-2 border border-border text-sky-400 hidden sm:table-cell">{r.owner || '-'}</td>
-                                    <td className="p-2 border border-border text-orange-400">{r.preferredGameName}</td>
-                                    <td className="p-2 border border-border">
-                                        <div className="flex flex-wrap gap-1">
-                                            {(r.players ?? []).length > 0
-                                                ? r.players!.map((p, pi) => (
-                                                    <span key={pi} className="bg-green-900/50 text-green-400 px-1.5 py-0.5 rounded text-[10px]">
-                                                        {p.nickname || p.username || '?'}
-                                                    </span>
-                                                  ))
-                                                : <span className="text-neutral-600">empty</span>
-                                            }
-                                            <span className="text-neutral-600 ml-1">({(r.players ?? []).length}/{r.maxPlayers})</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {rooms.map((r, i) => {
+                                const host = r.address || window.location.hostname;
+                                const deepLink = `azahar://${host}:${r.port}`;
+                                const targetAddr = `${host}:${r.port}`;
+
+                                return (
+                                    <tr key={i} className={`${i % 2 === 0 ? 'bg-neutral-900' : 'bg-neutral-950'} hover:bg-sky-900/30 transition-colors`}>
+                                        <td className="p-2 border border-border text-neutral-200 font-bold">{r.name}</td>
+                                        <td className="p-2 border border-border text-sky-400 hidden sm:table-cell">{r.owner || '-'}</td>
+                                        <td className="p-2 border border-border text-orange-400">{r.preferredGameName}</td>
+                                        <td className="p-2 border border-border">
+                                            <div className="flex flex-wrap items-center gap-1">
+                                                {(r.players ?? []).length > 0
+                                                    ? r.players!.map((p, pi) => (
+                                                        <span key={pi} className="bg-green-900/50 text-green-400 px-1.5 py-0.5 rounded text-[10px]">
+                                                            {p.nickname || p.username || '?'}
+                                                        </span>
+                                                      ))
+                                                    : <span className="text-neutral-600">empty</span>
+                                                }
+                                                <span className="text-neutral-500 ml-1 text-[11px]">({(r.players ?? []).length}/{r.maxPlayers})</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-2 border border-border">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <a
+                                                    href={deepLink}
+                                                    className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-2.5 py-1 border border-sky-700 font-bold text-[10px] text-center"
+                                                    title={`Join via azahar://${targetAddr}`}
+                                                >
+                                                    JOIN
+                                                </a>
+                                                <button
+                                                    onClick={() => copyAddress(targetAddr, i)}
+                                                    className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-2 py-1 border border-border text-[10px]"
+                                                    title="Copy Host:Port"
+                                                >
+                                                    {copiedIndex === i ? 'COPIED' : 'COPY'}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {rooms.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="p-4 text-center text-neutral-600 font-mono text-xs">No active rooms</td>
+                                    <td colSpan={5} className="p-4 text-center text-neutral-600 font-mono text-xs">No active rooms</td>
                                 </tr>
                             )}
                         </tbody>
