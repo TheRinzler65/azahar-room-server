@@ -10,7 +10,6 @@ export const Window = ({
   <div className="border border-border bg-panel rounded-sm shadow-none">
     <div className="bg-title px-2 py-1 border-b border-border flex justify-between items-center text-xs text-neutral-300">
       <span className="font-mono">{title}</span>
-      <button className="hover:bg-red-900 px-1 font-mono">X</button>
     </div>
     <div className="p-2">{children}</div>
   </div>
