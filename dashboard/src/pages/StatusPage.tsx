@@ -12,18 +12,7 @@ interface Check {
 export const StatusPage = () => {
   const [checks, setChecks] = useState<Check[]>([
     { name: "API Server", url: `${API}/`, status: "loading", latency: null },
-    {
-      name: "Lobby (Rooms)",
-      url: `${API}/rooms`,
-      status: "loading",
-      latency: null,
-    },
-    {
-      name: "Auth Server",
-      url: `${API}/jwt/internal`,
-      status: "loading",
-      latency: null,
-    },
+    { name: "Lobby (Rooms)", url: `${API}/rooms`, status: "loading", latency: null },
   ]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,7 +27,7 @@ export const StatusPage = () => {
           const latency = Math.round(performance.now() - start);
           return {
             ...check,
-            status: res.ok ? "ok" : "error",
+            status: res.status < 500 ? "ok" : "error",
             latency,
           } as Check;
         } catch {

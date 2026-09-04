@@ -69,8 +69,13 @@ app.use("/api", roomRoutes);
 app.use(roomRoutes);
 
 app.use("/api", chatRoutes);
+app.use(chatRoutes);
+
 app.use("/api", statsRoutes);
+app.use(statsRoutes);
+
 app.use("/api", adminRoutes);
+app.use(adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(Number(PORT), "0.0.0.0", () => {

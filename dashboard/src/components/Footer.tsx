@@ -1,24 +1,13 @@
-﻿import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+﻿import { useEffect, useState } from "react";
 import { API } from "../config";
 
 export const Footer = () => {
-  const appVersion = import.meta.env.VITE_APP_VERSION || "v-dev";
-  const [status, setStatus] = useState<"ok" | "error" | "loading">("loading");
+  const [apiUp, setApiUp] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`${API}/`);
-        setStatus(res.ok ? "ok" : "error");
-      } catch {
-        setStatus("error");
-      }
-    };
-
-    checkStatus();
-    const timer = setInterval(checkStatus, 30000);
-    return () => clearInterval(timer);
+    fetch(`${API}/`)
+      .then((res) => setApiUp(res.ok))
+      .catch(() => setApiUp(false));
   }, []);
 
   return (
@@ -27,23 +16,9 @@ export const Footer = () => {
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <span className="text-muted-400">AZAHAR ROOM SERVER</span>
           <span className="hidden sm:inline text-muted-700">|</span>
-          <span>version: {appVersion}</span>
+          <span>v1.0.0</span>
         </div>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-          <Link
-            to="/privacy"
-            className="text-muted-400 hover:text-primary-400 transition-colors"
-          >
-            Privacy
-          </Link>
-          <span className="hidden sm:inline text-muted-700">|</span>
-          <Link
-            to="/status"
-            className="text-muted-400 hover:text-primary-400 transition-colors"
-          >
-            Status
-          </Link>
-          <span className="hidden sm:inline text-muted-700">|</span>
           <a
             href="https://github.com/TheRinzler65/azahar-room-server"
             target="_blank"
@@ -53,37 +28,42 @@ export const Footer = () => {
             GitHub
           </a>
           <span className="hidden sm:inline text-muted-700">|</span>
-          <Link
-            to="/status"
-            className="flex items-center gap-1.5 hover:opacity-85 transition-opacity"
+          <a
+            href="/privacy"
+            className="text-muted-400 hover:text-primary-400 transition-colors"
+          >
+            Privacy & Legal
+          </a>
+          <span className="hidden sm:inline text-muted-700">|</span>
+          <a
+            href="/status"
+            className="flex items-center gap-1.5 hover:text-primary-400 transition-colors"
           >
             <span
               className={`w-1.5 h-1.5 rounded-full block ${
-                status === "ok"
-                  ? "bg-success-500"
-                  : status === "error"
-                    ? "bg-danger-500"
-                    : "bg-muted-500 animate-pulse"
+                apiUp === null
+                  ? "bg-muted-600"
+                  : apiUp
+                    ? "bg-success-500"
+                    : "bg-danger-500"
               }`}
             />
             <span
               className={
-                status === "ok"
-                  ? "text-success-400"
-                  : status === "error"
-                    ? "text-danger-400"
-                    : "text-muted-400"
+                apiUp === null
+                  ? "text-muted-600"
+                  : apiUp
+                    ? "text-success-600"
+                    : "text-danger-600"
               }
             >
-              {status === "ok"
-                ? "All systems operational"
-                : status === "error"
-                  ? "System outage"
-                  : "Checking status..."}
+              {apiUp === null
+                ? "Checking..."
+                : apiUp
+                  ? "All systems operational"
+                  : "System offline"}
             </span>
-          </Link>
-          <span className="hidden sm:inline text-muted-700">|</span>
-          <span>© {new Date().getFullYear()} Rinzler</span>
+          </a>
         </div>
       </div>
     </footer>
