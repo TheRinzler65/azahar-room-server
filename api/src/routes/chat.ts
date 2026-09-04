@@ -3,6 +3,7 @@ import { rooms, chatLogs } from '../state';
 import { addChatMessage } from '../db/chat';
 import { listRoomConfigs } from '../db/rooms';
 import { broadcastChat } from '../ws';
+import { filterChatMessage } from '../utils/chatFilter';
 
 const router = Router();
 
@@ -22,14 +23,19 @@ router.post('/chat/:id', async (req, res) => {
     }
 
     const cleanUsername = username.trim();
-    const cleanMessage = message.trim();
+    const rawMessage = message.trim();
 
     if (!cleanUsername || cleanUsername.length > 32) {
         return res.status(400).send('Invalid username length');
     }
     
-    if (!cleanMessage || cleanMessage.length > 512) {
+    if (!rawMessage || rawMessage.length > 512) {
         return res.status(400).send('Invalid message length');
+    }
+
+    const { clean: cleanMessage, flagged } = filterChatMessage(rawMessage);
+    if (flagged) {
+        console.log(`[ChatRoute] [Automod] Message assaini pour room=${id} user=${cleanUsername}`);
     }
 
     if (!chatLogs[id]) chatLogs[id] = [];

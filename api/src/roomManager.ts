@@ -10,12 +10,25 @@ import {
     setRoomConfigStatus, createRoomInstance, updateRoomInstance, deleteRoomInstance,
 } from './db/rooms';
 import { broadcastNotification } from './ws';
+import { filterChatMessage } from './utils/chatFilter';
 
 loadEnv();
 
 const running: Map<number, { proc: ChildProcess; instanceId: number }> = new Map();
 const watchers: Map<number, Tail> = new Map();
 const announcedRoom: Map<number, string> = new Map();
+
+interface RestartTracker {
+    attempts: number;
+    firstCrashAt: number;
+    timer?: NodeJS.Timeout;
+}
+const restartTrackers: Map<number, RestartTracker> = new Map();
+const intentionalStops: Set<number> = new Set();
+
+const MAX_RESTART_ATTEMPTS = 3;
+const CRASH_WINDOW_MS = 60_000;
+const BASE_RESTART_DELAY_MS = 3_000;
 
 const chatRegex = /HandleChatPacket:\d+:\s*([^:]+):\s*(.*)$/;
 
@@ -72,8 +85,12 @@ function parseChatStream(cfg: RoomConfigRow, chunk: Buffer) {
         const match = line.match(chatRegex);
         if (match) {
             const username = match[1].trim();
-            const message = match[2].trim();
-            if (username && message) {
+            const rawMessage = match[2].trim();
+            if (username && rawMessage) {
+                const { clean: message, flagged } = filterChatMessage(rawMessage);
+                if (flagged) {
+                    console.log(`[chatRelay] [Automod] Message assaini pour slug=${cfg.slug} user=${username}`);
+                }
                 console.log(`[chatRelay] SEND slug=${cfg.slug} user=${username} msg=${message}`);
                 postChat(cfg.slug, username, message);
             }
@@ -91,9 +108,15 @@ function attachChatWatcher(cfg: RoomConfigRow) {
         if (match) {
             const roomId = announcedRoom.get(cfg.id);
             const username = match[1].trim();
-            const message = match[2].trim();
-            console.log(`[chatRelay] match: room=${cfg.slug} roomId=${roomId} user=${username} msg=${message}`);
-            if (roomId && username && message) postChat(roomId, username, message);
+            const rawMessage = match[2].trim();
+            if (roomId && username && rawMessage) {
+                const { clean: message, flagged } = filterChatMessage(rawMessage);
+                if (flagged) {
+                    console.log(`[chatRelay] [Automod] Message watcher assaini pour room=${cfg.slug} user=${username}`);
+                }
+                console.log(`[chatRelay] match: room=${cfg.slug} roomId=${roomId} user=${username} msg=${message}`);
+                postChat(roomId, username, message);
+            }
         }
     });
     tail.on('error', (e: any) => console.error(`[chatRelay] tail error on ${logFile}: ${e.message}`));
@@ -124,6 +147,38 @@ function buildArgs(cfg: RoomConfigRow): string[] {
     return args;
 }
 
+function handleAutoRestart(cfg: RoomConfigRow) {
+    const now = Date.now();
+    let tracker = restartTrackers.get(cfg.id);
+
+    if (!tracker || now - tracker.firstCrashAt > CRASH_WINDOW_MS) {
+        tracker = { attempts: 1, firstCrashAt: now };
+    } else {
+        tracker.attempts += 1;
+    }
+
+    if (tracker.attempts > MAX_RESTART_ATTEMPTS) {
+        console.error(`[RoomManager] Room "${cfg.name}" a crashé trop souvent (${tracker.attempts} fois). Abandon de la relance.`);
+        broadcastNotification(`Room "${cfg.name}" a crashé de manière répétée. Auto-restart désactivé.`);
+        restartTrackers.delete(cfg.id);
+        return;
+    }
+
+    const delay = BASE_RESTART_DELAY_MS * Math.pow(2, tracker.attempts - 1);
+    console.log(`[RoomManager] Tentative de relance pour "${cfg.name}" (tentative ${tracker.attempts}/${MAX_RESTART_ATTEMPTS}) dans ${delay / 1000}s...`);
+    broadcastNotification(`Room "${cfg.name}" s'est arrêtée. Relance automatique dans ${delay / 1000}s.`);
+
+    tracker.timer = setTimeout(async () => {
+        const configs = await listRoomConfigs();
+        const freshCfg = configs.find(c => c.id === cfg.id);
+        if (freshCfg && freshCfg.auto_start && !running.has(freshCfg.id)) {
+            await startRoom(freshCfg);
+        }
+    }, delay);
+
+    restartTrackers.set(cfg.id, tracker);
+}
+
 export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; error?: string; pid?: number }> {
     if (running.has(cfg.id)) return { ok: false, error: 'Room already running' };
 
@@ -138,6 +193,8 @@ export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; erro
     const args = buildArgs(cfg);
     const cwd = process.env.ROOM_CWD || (fs.existsSync(PROJECT_ROOT) ? PROJECT_ROOT : process.cwd());
     
+    intentionalStops.delete(cfg.id);
+
     const proc = spawn(binary, args, {
         cwd,
         detached: false,
@@ -171,7 +228,15 @@ export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; erro
         await deleteRoomInstance(cfg.id);
         await setRoomConfigStatus(cfg.id, 'stopped');
         console.log(`[RoomManager] ${cfg.slug} exited (code=${code} signal=${signal})`);
-        if (code !== 0) broadcastNotification(`Room "${cfg.name}" exited unexpectedly (code=${code})`);
+
+        const wasIntentional = intentionalStops.has(cfg.id);
+        intentionalStops.delete(cfg.id);
+
+        if (!wasIntentional && cfg.auto_start) {
+            handleAutoRestart(cfg);
+        } else if (!wasIntentional && code !== 0) {
+            broadcastNotification(`Room "${cfg.name}" exited unexpectedly (code=${code})`);
+        }
     });
 
     proc.on('error', async (err) => {
@@ -182,6 +247,13 @@ export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; erro
         await setRoomConfigStatus(cfg.id, 'stopped');
         console.log(`[RoomManager] ${cfg.slug} spawn error: ${err.message}`);
         broadcastNotification(`Room "${cfg.name}" spawn error: ${err.message}`);
+
+        const wasIntentional = intentionalStops.has(cfg.id);
+        intentionalStops.delete(cfg.id);
+
+        if (!wasIntentional && cfg.auto_start) {
+            handleAutoRestart(cfg);
+        }
     });
 
     console.log(`[RoomManager] Started ${cfg.slug} (pid=${proc.pid})`);
@@ -189,6 +261,14 @@ export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; erro
 }
 
 export async function stopRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; error?: string }> {
+    intentionalStops.add(cfg.id);
+
+    const tracker = restartTrackers.get(cfg.id);
+    if (tracker?.timer) {
+        clearTimeout(tracker.timer);
+        restartTrackers.delete(cfg.id);
+    }
+
     const entry = running.get(cfg.id);
     if (!entry) {
         const t = watchers.get(cfg.id);
