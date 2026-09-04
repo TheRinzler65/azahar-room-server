@@ -44,6 +44,10 @@ router.post("/lobby", async (req, res) => {
 
   const id = generateId();
   const roomData = req.body;
+  const isLocalAnnounce =
+    clientIp === "127.0.0.1" ||
+    clientIp === "::1" ||
+    clientIp === "::ffff:127.0.0.1";
 
   const newRoom: Room = {
     ...roomData,
@@ -59,11 +63,9 @@ router.post("/lobby", async (req, res) => {
     preferredGameName: roomData.preferredGameName || roomData.preferred_game || "",
     preferredGameId: roomData.preferredGameId ?? roomData.preferred_game_id ?? 0,
     description: roomData.description || "",
-    address:
-      roomData.address ||
-      roomData.ip ||
-      process.env.PUBLIC_ADDRESS ||
-      "rinzler-azahar.duckdns.org",
+    address: isLocalAnnounce
+      ? process.env.PUBLIC_ADDRESS || "rinzler-azahar.duckdns.org"
+      : roomData.address || roomData.ip || clientIp,
     owner: username || roomData.owner || "server",
     createdAt: Date.now(),
     lastUpdate: Date.now(),
@@ -152,33 +154,39 @@ router.get("/lobby", async (req, res) => {
   const live = rooms.filter((r) => now - r.lastUpdate < 120000);
   setRooms(live);
   const lanAddress = process.env.LAN_ADDRESS;
+  const publicAddress = process.env.PUBLIC_ADDRESS || "rinzler-azahar.duckdns.org";
   const fromLan =
     !!lanAddress &&
     clientIp.split(".").slice(0, 2).join(".") ===
       lanAddress.split(".").slice(0, 2).join(".");
   res.setHeader("Content-Type", "application/json");
   res.json({
-    rooms: live.map((r) => ({
-      id: r.id,
-      externalGuid: r.verifyUID || r.id,
-      verify_UID: r.verifyUID || r.id,
-      name: r.name,
-      description: r.description || "",
-      owner: r.owner,
-      address: fromLan ? lanAddress : r.address,
-      ip: fromLan ? lanAddress : r.address,
-      port: r.port,
-      maxPlayers: r.maxPlayers,
-      max_player: r.maxPlayers,
-      netVersion: r.netVersion,
-      net_version: r.netVersion,
-      hasPassword: r.hasPassword,
-      has_password: r.hasPassword,
-      preferredGameName: r.preferredGameName,
-      preferredGameId: r.preferredGameId,
-      members: r.players || [],
-      players: r.players || [],
-    })),
+    rooms: live.map((r) => {
+      const isServerRoom = r.address === publicAddress;
+      const effectiveAddress =
+        isServerRoom && fromLan ? lanAddress : r.address;
+      return {
+        id: r.id,
+        externalGuid: r.verifyUID || r.id,
+        verify_UID: r.verifyUID || r.id,
+        name: r.name,
+        description: r.description || "",
+        owner: r.owner,
+        address: effectiveAddress,
+        ip: effectiveAddress,
+        port: r.port,
+        maxPlayers: r.maxPlayers,
+        max_player: r.maxPlayers,
+        netVersion: r.netVersion,
+        net_version: r.netVersion,
+        hasPassword: r.hasPassword,
+        has_password: r.hasPassword,
+        preferredGameName: r.preferredGameName,
+        preferredGameId: r.preferredGameId,
+        members: r.players || [],
+        players: r.players || [],
+      };
+    }),
   });
 });
 
