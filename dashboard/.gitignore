@@ -11,3 +11,5 @@ build/
 .pm2/
 npm-debug.log*
 yarn-error.log*
+
+.env

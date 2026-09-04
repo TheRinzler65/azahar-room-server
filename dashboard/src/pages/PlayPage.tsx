@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Window } from "../components/Window";
 import { API } from "../config";
 
-const EMU_API_URL = "http://api-rinzler-azahar.duckdns.org";
+const emuApiUrl = import.meta.env.VITE_EMU_API_URL || "http://localhost:3000";
 
 interface ActiveRoom {
   id: string;
@@ -25,13 +26,13 @@ interface Profile {
 
 export const PlayPage = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [rooms, setRooms] = useState<ActiveRoom[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [showToken, setShowToken] = useState(false);
-  const playerName =
-    sessionStorage.getItem("azahar_player_name") || "your_username";
+  
+  const playerName = sessionStorage.getItem("azahar_player_name");
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -54,29 +55,29 @@ export const PlayPage = () => {
   };
 
   useEffect(() => {
-    const name = sessionStorage.getItem("azahar_player_name");
-    if (!name) return;
+    if (!playerName) {
+      setLoadingProfile(false);
+      return;
+    }
     const jwt = sessionStorage.getItem("azahar_player_jwt");
     const headers: Record<string, string> = {};
     if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
-    fetch(`${API}/player/${name}`, { headers })
-      .then((res) => res.json())
+    
+    fetch(`${API}/player/${playerName}`, { headers })
+      .then((res) => {
+        if (!res.ok) throw new Error("Profile not found");
+        return res.json();
+      })
       .then(setProfile)
-      .catch(() => setError("Profile not found"));
-  }, []);
+      .catch(() => {})
+      .finally(() => setLoadingProfile(false));
+  }, [playerName]);
 
   useEffect(() => {
     fetchRooms();
     const timer = setInterval(fetchRooms, 15000);
     return () => clearInterval(timer);
   }, []);
-
-  if (!profile)
-    return (
-      <div className="p-4 font-mono text-xs text-muted-500">
-        {error || "Loading..."}
-      </div>
-    );
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-4 font-mono text-xs">
@@ -218,11 +219,11 @@ export const PlayPage = () => {
                   <div className="flex gap-2">
                     <input
                       readOnly
-                      value={EMU_API_URL}
+                      value={emuApiUrl}
                       className="bg-muted-900 text-primary-400 border border-border px-2 py-1 flex-1 focus:outline-none"
                     />
                     <button
-                      onClick={() => copy(EMU_API_URL, "url")}
+                      onClick={() => copy(emuApiUrl, "url")}
                       className="bg-primary-900 hover:bg-primary-800 text-primary-100 px-3 py-1 border border-primary-700 shrink-0"
                     >
                       {copied === "url" ? "Copied!" : "COPY"}
@@ -237,11 +238,15 @@ export const PlayPage = () => {
                         readOnly
                         type="text"
                         value={
-                          profile?.citraToken
-                            ? showToken
-                              ? profile.citraToken
-                              : "••••••••••••••••"
-                            : "not set"
+                          !playerName
+                            ? "Please sign in to view your token"
+                            : profile?.citraToken
+                              ? showToken
+                                ? profile.citraToken
+                                : "••••••••••••••••"
+                              : loadingProfile
+                                ? "Loading profile..."
+                                : "not set"
                         }
                         className="bg-muted-900 text-warning-400 border border-border px-2 py-1 pr-8 w-full focus:outline-none"
                       />
@@ -279,9 +284,15 @@ export const PlayPage = () => {
                       {copied === "token" ? "Copied!" : "COPY"}
                     </button>
                   </div>
-                  <div className="text-muted-500 mt-1">
-                    Your citra_token (shown after registration in your Profile).
-                  </div>
+                  {!playerName ? (
+                    <div className="text-muted-500 mt-1">
+                      <Link to="/login" className="text-primary-400 hover:underline">Sign in</Link> or <Link to="/register" className="text-primary-400 hover:underline">register</Link> to get your network token.
+                    </div>
+                  ) : (
+                    <div className="text-muted-500 mt-1">
+                      Your citra_token (shown after registration in your Profile).
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -304,11 +315,11 @@ export const PlayPage = () => {
                 <div className="flex gap-2">
                   <input
                     readOnly
-                    value={playerName}
+                    value={playerName || "your_username"}
                     className="bg-muted-900 text-warning-400 border border-border px-2 py-1 flex-1 focus:outline-none"
                   />
                   <button
-                    onClick={() => copy(playerName, "username")}
+                    onClick={() => copy(playerName || "your_username", "username")}
                     className="bg-primary-900 hover:bg-primary-800 text-primary-100 px-3 py-1 border border-primary-700 shrink-0"
                   >
                     {copied === "username" ? "Copied!" : "COPY"}
