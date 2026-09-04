@@ -18,7 +18,6 @@ loadEnv();
 
 initDB().then(async () => { await syncBanFile(); await startAutoRooms(); });
 
-// Mark lobby rooms "gone" after inactivity (independent of incoming requests).
 setInterval(() => {
     expireLobbyRooms(120000).catch(() => {});
 }, 30000);
@@ -58,11 +57,11 @@ app.get('/', (_req, res) => {
     res.json({ service: 'azahar-master-api', status: 'ok' });
 });
 
-app.use(authRoutes);
-app.use(roomRoutes);
-app.use(chatRoutes);
-app.use(statsRoutes);
-app.use(adminRoutes);
+app.use('/api', authRoutes);
+app.use('/api', roomRoutes);
+app.use('/api', chatRoutes);
+app.use('/api', statsRoutes);
+app.use('/api', adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(Number(PORT), '0.0.0.0', () => {

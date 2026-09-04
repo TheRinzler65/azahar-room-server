@@ -29,34 +29,23 @@ export function signAdminJWT(): string {
 }
 
 export async function checkAuth(req: express.Request): Promise<{ username?: string; valid: boolean }> {
-    const ip = req.ip || req.socket.remoteAddress || '';
-    const isLocal = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
-
-    if (isLocal) {
-        return { username: req.header('x-username') ?? req.body?.username ?? 'server', valid: true };
-    }
-
-    // 1) Bearer JWT (dashboard / emulator)
     const authHeader = req.header('authorization');
     if (authHeader?.startsWith('Bearer ')) {
         const jwtToken = authHeader.slice(7);
-        // ponytail: accept both issuers — 'citra-core' from emulator, 'azahar-player' from dashboard
         for (const issuer of ['citra-core', 'azahar-player']) {
             try {
                 const decoded = jwt.verify(jwtToken, publicKey, {
                     algorithms: ['RS256'], issuer
                 }) as any;
                 return { username: decoded.sub, valid: true };
-            } catch { /* try next issuer */ }
+            } catch { /* try next */ }
         }
     }
 
-    // 2) x-username + x-citra-token (emulator Citra/Azahar)
     const username = (req.header('x-username') || req.body?.username || '').trim();
     const token = (req.header('x-citra-token') || req.header('x-token') || req.body?.token || '').trim();
 
     if (username && token) {
-        // ponytail: token validated against DB, not trusted blind
         const user = await findUserByUsername(username);
         if (user && user.citra_token === token) {
             return { username, valid: true };
@@ -64,6 +53,13 @@ export async function checkAuth(req: express.Request): Promise<{ username?: stri
         if (token === process.env.ROOM_TOKEN) {
             return { username: username || process.env.ROOM_USERNAME || 'Rinzler', valid: true };
         }
+    }
+
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const isLocal = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+
+    if (isLocal) {
+        return { username: req.header('x-username') ?? req.body?.username ?? 'server', valid: true };
     }
 
     return { valid: false };
