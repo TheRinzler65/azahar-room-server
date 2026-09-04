@@ -17,8 +17,9 @@ const running: Map<number, { proc: ChildProcess; instanceId: number }> = new Map
 const watchers: Map<number, Tail> = new Map();
 const announcedRoom: Map<number, string> = new Map();
 
-// Match azahar-room chat lines: [ timestamp] Network <Info> ...:HandleChatPacket:NUM: username: message
 const chatRegex = /HandleChatPacket:\d+:\s*([^:]+):\s*(.*)$/;
+
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '../../..');
 
 function postChat(roomId: string, username: string, message: string) {
     const body = JSON.stringify({ username, message });
@@ -33,6 +34,9 @@ function postChat(roomId: string, username: string, message: string) {
 }
 
 function getBanFile(slug: string): string {
+    if (process.env.BANLIST_PATH) return process.env.BANLIST_PATH;
+    const localBan = path.join(PROJECT_ROOT, 'banlist.txt');
+    if (fs.existsSync(localBan)) return localBan;
     return '/opt/azahar/banlist.txt';
 }
 
@@ -54,8 +58,8 @@ if (require.main === module) {
 }
 
 function ensureLogFile(slug: string): string {
-    const logFile = path.join('/opt/azahar', 'logs', `${slug}.log`);
-    const logDir = path.dirname(logFile);
+    const logDir = process.env.LOGS_DIR || (fs.existsSync('/opt/azahar') ? '/opt/azahar/logs' : path.join(PROJECT_ROOT, 'logs'));
+    const logFile = path.join(logDir, `${slug}.log`);
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
     if (!fs.existsSync(logFile)) fs.writeFileSync(logFile, '');
     return logFile;
@@ -132,9 +136,10 @@ export async function startRoom(cfg: RoomConfigRow): Promise<{ ok: boolean; erro
     const token = process.env.ROOM_TOKEN || '';
 
     const args = buildArgs(cfg);
+    const cwd = process.env.ROOM_CWD || (fs.existsSync(PROJECT_ROOT) ? PROJECT_ROOT : process.cwd());
     
-    // FIX: Passing environment variables explicitly to the spawned process
     const proc = spawn(binary, args, {
+        cwd,
         detached: false,
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
@@ -212,7 +217,6 @@ export async function startAutoRooms() {
 }
 
 export async function registerAnnouncedRoom(name: string, port: number, roomId: string) {
-    // Match against a config by port among currently-running rooms.
     const configs = await listRoomConfigs();
     const cfg = configs.find(c => c.port === port && running.has(c.id));
     if (!cfg) {
@@ -222,14 +226,24 @@ export async function registerAnnouncedRoom(name: string, port: number, roomId: 
     announcedRoom.set(cfg.id, roomId);
     const inst = await getRoomInstanceByConfig(cfg.id);
     if (!inst) return;
-    await updateRoomInstance(inst.id, { announced_room_id: roomId, announced_name: name, last_seen: Date.now() });
-    console.log(`[chatRelay] announced room: cfg=${cfg.slug} roomId=${roomId}`);
+    try {
+        await updateRoomInstance(inst.id, { announced_room_id: roomId, announced_name: name, last_seen: Date.now() });
+        console.log(`[chatRelay] announced room: cfg=${cfg.slug} roomId=${roomId}`);
+    } catch (err: any) {
+        console.error(`[chatRelay] Failed to update room instance: ${err.message}`);
+    }
 }
 
 export async function bindPing(roomId: string, players: any[]) {
     const instances = await listRoomInstances();
     const inst = instances.find(i => i.announced_room_id === roomId);
-    if (inst) await updateRoomInstance(inst.id, { last_seen: Date.now() });
+    if (inst) {
+        try {
+            await updateRoomInstance(inst.id, { last_seen: Date.now() });
+        } catch (err: any) {
+            console.error(`[bindPing] Failed to update last_seen: ${err.message}`);
+        }
+    }
 }
 
 export function isRunning(configId: number): boolean {

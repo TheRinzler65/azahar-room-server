@@ -58,7 +58,11 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/api', authRoutes);
+app.use(authRoutes);
+
 app.use('/api', roomRoutes);
+app.use(roomRoutes);
+
 app.use('/api', chatRoutes);
 app.use('/api', statsRoutes);
 app.use('/api', adminRoutes);
