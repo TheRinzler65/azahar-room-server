@@ -74,7 +74,7 @@ export async function initDB() {
             id INT AUTO_INCREMENT PRIMARY KEY,
             config_id INT NOT NULL,
             pid INT,
-            announced_room_id VARCHAR(32),
+            announced_room_id VARCHAR(36),
             announced_name VARCHAR(64),
             last_seen BIGINT,
             created_at BIGINT NOT NULL
@@ -107,9 +107,6 @@ export async function initDB() {
             UNIQUE KEY unique_lobby_port (port, name)
         )
     `);
-    // Migrations pour les tables existantes (anciennes colonnes VARCHAR(32))
-    try { await db.query(`ALTER TABLE lobby_rooms MODIFY id VARCHAR(36)`); } catch {}
-    try { await db.query(`ALTER TABLE chat_messages MODIFY room_id VARCHAR(36)`); } catch {}
     await db.query(`
         CREATE TABLE IF NOT EXISTS activity_history (
             id INT AUTO_INCREMENT PRIMARY KEY,
