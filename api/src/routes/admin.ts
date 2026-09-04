@@ -12,6 +12,8 @@ import { listAllUsers } from '../db/users';
 import { broadcastChat, broadcastNotification } from '../ws';
 import { listLobbyRooms } from '../db/lobby';
 import { listChatMessagesByRoomId } from '../db/chat';
+import { logAdminAction, listAuditLogs } from '../db/audit';
+import { notifyBan, notifyRoomStatus } from '../utils/discord';
 
 const router = Router();
 
@@ -34,13 +36,24 @@ function slugify(name: string): string {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'room';
 }
 
-router.post('/admin/login', loginLimiter, (req, res) => {
+function getClientIp(req: any): string {
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() 
+        || req.socket?.remoteAddress 
+        || req.ip 
+        || 'unknown';
+}
+
+router.post('/admin/login', loginLimiter, async (req, res) => {
     const { password } = req.body;
+    const ip = getClientIp(req);
+
     if (password === ADMIN_TOKEN) {
         const jwtToken = signAdminJWT();
         console.log('[Admin] Login successful');
+        await logAdminAction('admin', 'LOGIN', 'auth', 'Successful admin login', ip);
         res.json({ token: jwtToken, expiresIn: ADMIN_JWT_EXPIRY });
     } else {
+        await logAdminAction('unknown', 'LOGIN_FAILED', 'auth', 'Failed login attempt', ip);
         res.status(403).send('Forbidden');
     }
 });
@@ -50,6 +63,17 @@ router.get('/admin/session', (req, res) => {
         res.json({ valid: true });
     } else {
         res.status(401).send('Unauthorized');
+    }
+});
+
+router.get('/admin/audit-logs', async (req, res) => {
+    if (!isAdmin(req)) return res.status(401).send('Unauthorized');
+    try {
+        const limit = parseInt(String(req.query.limit || '100'), 10);
+        const logs = await listAuditLogs(limit);
+        res.json(logs);
+    } catch (e: any) {
+        res.status(500).send(e.message);
     }
 });
 
@@ -70,6 +94,7 @@ router.get('/admin/bans', async (req, res) => {
 router.post('/admin/ban', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const { type, value, reason, durationMinutes, duration } = req.body;
+    const ip = getClientIp(req);
 
     if (!type || !value) return res.status(400).send('type and value required');
 
@@ -80,6 +105,23 @@ router.post('/admin/ban', async (req, res) => {
         await syncBanFile();
         const durationText = minutes && minutes > 0 ? ` for ${minutes} minute(s)` : ' (permanent)';
         console.log(`[Admin] Banned ${type}: ${value}${durationText}`);
+
+        await logAdminAction(
+            'admin',
+            'BAN_ADD',
+            `${type}:${value}`,
+            JSON.stringify({ reason: reason || null, durationMinutes: minutes ?? null }),
+            ip
+        );
+
+        await notifyBan(
+            type,
+            value,
+            reason,
+            minutes && minutes > 0 ? `${minutes} minute(s)` : 'Permanent',
+            'admin'
+        );
+
         broadcastNotification(`Banned ${type}: ${value}${durationText}${reason ? ` (${reason})` : ''}`);
         res.json({ success: true });
     } catch (e: any) {
@@ -90,6 +132,7 @@ router.post('/admin/ban', async (req, res) => {
 router.delete('/admin/ban', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const { type, value } = req.body;
+    const ip = getClientIp(req);
 
     if (!type || !value) return res.status(400).send('type and value required');
 
@@ -97,6 +140,9 @@ router.delete('/admin/ban', async (req, res) => {
         await removeBan(type, value);
         await syncBanFile();
         console.log(`[Admin] Unbanned ${type}: ${value}`);
+
+        await logAdminAction('admin', 'BAN_REMOVE', `${type}:${value}`, null, ip);
+
         broadcastNotification(`Unbanned ${type}: ${value}`);
         res.json({ success: true });
     } catch (e: any) {
@@ -183,6 +229,8 @@ router.get('/admin/rooms', async (req, res) => {
 router.post('/admin/rooms', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const { name, port, max_members, preferred_game_name, preferred_game_id, description, auto_start } = req.body;
+    const ip = getClientIp(req);
+
     if (!name || !port) return res.status(400).send('name and port required');
 
     const existing = await listRoomConfigs();
@@ -205,12 +253,14 @@ router.post('/admin/rooms', async (req, res) => {
     });
 
     console.log(`[Admin] Room config created: ${name} (id=${id})`);
+    await logAdminAction('admin', 'ROOM_CREATE', name, JSON.stringify({ id, port }), ip);
     res.json({ success: true, id });
 });
 
 router.patch('/admin/rooms/:id', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const { id } = req.params;
+    const ip = getClientIp(req);
     const cfg = await getRoomConfig(Number(id));
     if (!cfg) return res.status(404).send('Not found');
 
@@ -223,40 +273,59 @@ router.patch('/admin/rooms/:id', async (req, res) => {
         description: description ?? cfg.description,
         auto_start: auto_start !== undefined ? (auto_start ? 1 : 0) : cfg.auto_start,
     });
+
+    await logAdminAction('admin', 'ROOM_UPDATE', cfg.name, JSON.stringify(req.body), ip);
     res.json({ success: true });
 });
 
 router.delete('/admin/rooms/:id', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const cfg = await getRoomConfig(Number(req.params.id));
+    const ip = getClientIp(req);
     if (!cfg) return res.status(404).send('Not found');
+
     if (cfg.status === 'running' || isRunning(cfg.id)) {
         await stopRoom(cfg);
     }
     await deleteRoomConfig(cfg.id);
     console.log(`[Admin] Room config deleted: ${cfg.name}`);
+
+    await logAdminAction('admin', 'ROOM_DELETE', cfg.name, JSON.stringify({ port: cfg.port }), ip);
     res.json({ success: true });
 });
 
 router.post('/admin/rooms/:id/start', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const cfg = await getRoomConfig(Number(req.params.id));
+    const ip = getClientIp(req);
     if (!cfg) return res.status(404).send('Not found');
+
     const result = await startRoom(cfg);
+    await logAdminAction('admin', 'ROOM_START', cfg.name, JSON.stringify(result), ip);
+    if (result.ok) {
+        await notifyRoomStatus(cfg.name, 'started', cfg.port);
+    }
     res.json(result);
 });
 
 router.post('/admin/rooms/:id/stop', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
     const cfg = await getRoomConfig(Number(req.params.id));
+    const ip = getClientIp(req);
     if (!cfg) return res.status(404).send('Not found');
+
     const result = await stopRoom(cfg);
     setRooms(rooms.filter(r => r.port !== cfg.port));
+    await logAdminAction('admin', 'ROOM_STOP', cfg.name, null, ip);
+    if (result.ok) {
+        await notifyRoomStatus(cfg.name, 'stopped', cfg.port);
+    }
     res.json(result);
 });
 
 router.post('/admin/restart', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
+    const ip = getClientIp(req);
     const configs = await listRoomConfigs();
     for (const cfg of configs) {
         if (isRunning(cfg.id)) await stopRoom(cfg);
@@ -264,6 +333,7 @@ router.post('/admin/restart', async (req, res) => {
     for (const cfg of configs) {
         if (cfg.auto_start) await startRoom(cfg);
     }
+    await logAdminAction('admin', 'GLOBAL_RESTART', 'all_rooms', null, ip);
     res.json({ success: true });
 });
 

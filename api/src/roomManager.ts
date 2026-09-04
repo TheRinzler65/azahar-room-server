@@ -11,6 +11,7 @@ import {
 } from './db/rooms';
 import { broadcastNotification } from './ws';
 import { filterChatMessage } from './utils/chatFilter';
+import { notifyRoomCrash } from './utils/discord';
 
 loadEnv();
 
@@ -156,6 +157,8 @@ function handleAutoRestart(cfg: RoomConfigRow) {
     } else {
         tracker.attempts += 1;
     }
+
+    notifyRoomCrash(cfg.name, tracker.attempts, MAX_RESTART_ATTEMPTS);
 
     if (tracker.attempts > MAX_RESTART_ATTEMPTS) {
         console.error(`[RoomManager] Room "${cfg.name}" a crashé trop souvent (${tracker.attempts} fois). Abandon de la relance.`);
