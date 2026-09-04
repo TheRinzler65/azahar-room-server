@@ -99,7 +99,7 @@ export async function initDB() {
             port INT NOT NULL,
             max_players INT NOT NULL DEFAULT 16,
             preferred_game_name VARCHAR(64),
-            preferred_game_id BIGINT,
+            preferred_game_id BIGINT UNSIGNED,
             address VARCHAR(255),
             has_password TINYINT(1) NOT NULL DEFAULT 0,
             first_seen BIGINT NOT NULL,
