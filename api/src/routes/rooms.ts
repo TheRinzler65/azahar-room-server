@@ -148,8 +148,14 @@ router.get("/lobby", async (req, res) => {
     return res.status(403).json({ error: "Banned" });
   }
 
-  setRooms(rooms.filter((r) => Date.now() - r.lastUpdate < 120000));
-  const live = rooms.filter((r) => Date.now() - r.lastUpdate < 120000);
+  const now = Date.now();
+  const live = rooms.filter((r) => now - r.lastUpdate < 120000);
+  setRooms(live);
+  const lanAddress = process.env.LAN_ADDRESS;
+  const fromLan =
+    !!lanAddress &&
+    clientIp.split(".").slice(0, 2).join(".") ===
+      lanAddress.split(".").slice(0, 2).join(".");
   res.setHeader("Content-Type", "application/json");
   res.json({
     rooms: live.map((r) => ({
@@ -159,8 +165,8 @@ router.get("/lobby", async (req, res) => {
       name: r.name,
       description: r.description || "",
       owner: r.owner,
-      address: r.address,
-      ip: r.address,
+      address: fromLan ? lanAddress : r.address,
+      ip: fromLan ? lanAddress : r.address,
       port: r.port,
       maxPlayers: r.maxPlayers,
       max_player: r.maxPlayers,
