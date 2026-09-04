@@ -98,13 +98,12 @@ export const Home = () => {
                                 <th className="p-2 border border-border hidden sm:table-cell">HOST</th>
                                 <th className="p-2 border border-border">GAME</th>
                                 <th className="p-2 border border-border">PLAYERS</th>
-                                <th className="p-2 border border-border text-center">ACTION</th>
+                                <th className="p-2 border border-border text-center">CONNECT</th>
                             </tr>
                         </thead>
                         <tbody>
                             {rooms.map((r, i) => {
                                 const host = r.address || window.location.hostname;
-                                const deepLink = `azahar://${host}:${r.port}`;
                                 const targetAddr = `${host}:${r.port}`;
 
                                 return (
@@ -125,23 +124,18 @@ export const Home = () => {
                                                 <span className="text-neutral-500 ml-1 text-[11px]">({(r.players ?? []).length}/{r.maxPlayers})</span>
                                             </div>
                                         </td>
-                                        <td className="p-2 border border-border">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <a
-                                                    href={deepLink}
-                                                    className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-2.5 py-1 border border-sky-700 font-bold text-[10px] text-center"
-                                                    title={`Join via azahar://${targetAddr}`}
-                                                >
-                                                    JOIN
-                                                </a>
-                                                <button
-                                                    onClick={() => copyAddress(targetAddr, i)}
-                                                    className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-2 py-1 border border-border text-[10px]"
-                                                    title="Copy Host:Port"
-                                                >
-                                                    {copiedIndex === i ? 'COPIED' : 'COPY'}
-                                                </button>
-                                            </div>
+                                        <td className="p-2 border border-border text-center">
+                                            <button
+                                                onClick={() => copyAddress(targetAddr, i)}
+                                                className={`px-3 py-1 border text-[10px] font-mono transition-colors ${
+                                                    copiedIndex === i
+                                                        ? 'bg-green-900/60 border-green-700 text-green-200'
+                                                        : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-border'
+                                                }`}
+                                                title="Copy Host:Port to clipboard"
+                                            >
+                                                {copiedIndex === i ? 'COPIED!' : `COPY IP (${r.port})`}
+                                            </button>
                                         </td>
                                     </tr>
                                 );

@@ -48,6 +48,13 @@ export const AdminRooms = () => {
         return () => clearInterval(interval);
     }, []);
 
+    const copyAddress = (port: number) => {
+        const addr = `${window.location.hostname}:${port}`;
+        navigator.clipboard.writeText(addr);
+        setMsg(`Copied ${addr} to clipboard`);
+        setTimeout(() => setMsg(''), 2000);
+    };
+
     const act = async (method: string, id: number, action: string) => {
         const res = await fetch(`${API}/admin/rooms/${id}${action}`, {
             method, headers: authHeaders()
@@ -160,10 +167,11 @@ export const AdminRooms = () => {
                             pid: <span className="text-neutral-500">{r.pid ?? '-'}</span>,
                             players: <span className="text-green-500">{live?.players?.length ?? 0} / {r.max_members}</span>,
                             actions: (
-                                <div className="flex gap-1">
+                                <div className="flex gap-2">
                                     {r.status === 'running'
                                         ? <button className="text-red-400 hover:text-red-300 hover:underline" onClick={() => act('POST', r.id, '/stop')}>[stop]</button>
                                         : <button className="text-green-400 hover:text-green-300 hover:underline" onClick={() => act('POST', r.id, '/start')}>[start]</button>}
+                                    <button className="text-neutral-400 hover:text-neutral-200 hover:underline" onClick={() => copyAddress(r.port)}>[copy ip]</button>
                                     <button className="text-sky-400 hover:text-sky-300 hover:underline" onClick={() => startEdit(r)}>[edit]</button>
                                     <button className="text-neutral-500 hover:text-red-400 hover:underline" onClick={() => del(r.id)}>[del]</button>
                                 </div>

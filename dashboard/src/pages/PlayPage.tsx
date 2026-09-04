@@ -50,10 +50,10 @@ export const PlayPage = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-4 space-y-4 font-mono text-xs">
-            <Window title="LIVE ROOMS (ONE-CLICK JOIN)">
+            <Window title="LIVE ROOMS">
                 <div className="space-y-3">
                     <div className="text-neutral-400">
-                        Click <span className="text-sky-400 font-bold">JOIN</span> to launch Azahar directly and connect to the room, or copy the direct address.
+                        Copy the direct room address and connect via <span className="text-sky-400 font-bold">Multiplayer → Direct Connect</span> in Azahar.
                     </div>
 
                     {loadingRooms ? (
@@ -66,10 +66,11 @@ export const PlayPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                             {rooms.map((r, idx) => {
                                 const host = r.address || window.location.hostname;
-                                const deepLink = `azahar://${host}:${r.port}`;
+                                const targetAddr = `${host}:${r.port}`;
                                 const gameTitle = r.preferred_game_name || r.preferredGameName || 'Any Game';
                                 const currentPlayers = r.players?.length ?? 0;
                                 const maxCap = r.max_members || r.maxPlayers || 16;
+                                const isCopied = copied === `room-${idx}`;
 
                                 return (
                                     <div key={r.id || idx} className="border border-border bg-neutral-900/60 p-3 space-y-2 flex flex-col justify-between">
@@ -86,18 +87,16 @@ export const PlayPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2 pt-2 border-t border-neutral-800/80">
-                                            <a
-                                                href={deepLink}
-                                                className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-3 py-1 border border-sky-700 font-bold text-center flex-1"
-                                            >
-                                                JOIN IN EMULATOR
-                                            </a>
+                                        <div className="pt-2 border-t border-neutral-800/80">
                                             <button
-                                                onClick={() => copy(`${host}:${r.port}`, `room-${idx}`)}
-                                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-2 py-1 border border-border"
+                                                onClick={() => copy(targetAddr, `room-${idx}`)}
+                                                className={`w-full py-1.5 border text-center font-bold text-[11px] transition-colors ${
+                                                    isCopied
+                                                        ? 'bg-green-900/60 border-green-700 text-green-200'
+                                                        : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border-border'
+                                                }`}
                                             >
-                                                {copied === `room-${idx}` ? 'COPIED!' : 'COPY IP'}
+                                                {isCopied ? 'COPIED TO CLIPBOARD!' : `COPY ADDRESS (${targetAddr})`}
                                             </button>
                                         </div>
                                     </div>
@@ -194,10 +193,9 @@ export const PlayPage = () => {
                         <span className="text-green-500 font-bold text-lg shrink-0">✓</span>
                         <div className="space-y-1">
                             <div className="text-neutral-200 font-bold">Connect to a Room</div>
-                            <div className="text-neutral-500">Once configured, go to <span className="text-neutral-300">Multiplayer</span> in Azahar or click a join button above.</div>
+                            <div className="text-neutral-500">In Azahar: go to <span className="text-neutral-300">Multiplayer → Direct Connect</span> and paste the room address copied above.</div>
                         </div>
                     </div>
-
                 </div>
             </Window>
         </div>
