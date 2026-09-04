@@ -70,10 +70,12 @@ export const PrivacyPage = () => (
           <p>
             You can request deletion of your account and all associated data by{" "}
             <a
-              href="mailto:admin@azahar-server.local"
+              href="https://discord.com/users/590070698140237826"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-primary-400 hover:underline"
             >
-              contacting the server administrator
+              contacting the server administrator on Discord
             </a>
             .
           </p>
