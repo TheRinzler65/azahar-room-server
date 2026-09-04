@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx scripts/generate-version.ts && vite",
+    "dev": "tsx scripts/generate-version.ts && vite --host",
     "build": "tsx scripts/generate-version.ts && tsc && vite build",
     "preview": "vite preview"
   },

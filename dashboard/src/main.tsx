@@ -12,6 +12,8 @@ import { AdminAudit } from "./pages/admin/AdminAudit";
 import { PlayPage } from "./pages/PlayPage";
 import { StatsPage } from "./pages/StatsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { StatusPage } from "./pages/StatusPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/audit" element={<AdminAudit />} />
+          <Route path="/status" element={<StatusPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </ErrorBoundary>
