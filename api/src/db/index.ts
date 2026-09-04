@@ -108,6 +108,17 @@ export async function initDB() {
             UNIQUE KEY unique_lobby_port (port, name)
         )
     `);
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            admin_username VARCHAR(64) NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            target VARCHAR(64),
+            details TEXT,
+            ip_address VARCHAR(45),
+            created_at BIGINT NOT NULL
+        )
+    `);
 
     try { await db.query(`ALTER TABLE lobby_rooms MODIFY id VARCHAR(36)`); } catch {}
     try { await db.query(`ALTER TABLE chat_messages MODIFY room_id VARCHAR(36)`); } catch {}

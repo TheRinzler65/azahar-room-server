@@ -7,10 +7,11 @@ import { AdminBans } from './admin/AdminBans';
 import { AdminStats } from './admin/AdminStats';
 import { AdminPlayers } from './admin/AdminPlayers';
 import { AdminLobby } from './admin/AdminLobby';
+import { AdminAudit } from './admin/AdminAudit';
 import { useNotifications } from '../hooks/useNotifications';
 import { API } from '../config';
 
-type Tab = 'rooms' | 'chat' | 'lobby' | 'bans' | 'players' | 'stats';
+type Tab = 'rooms' | 'chat' | 'lobby' | 'bans' | 'players' | 'stats' | 'audit';
 
 export const AdminPage = () => {
     const navigate = useNavigate();
@@ -73,6 +74,7 @@ export const AdminPage = () => {
         { id: 'bans', label: 'BANS' },
         { id: 'players', label: 'PLAYERS' },
         { id: 'stats', label: 'STATS' },
+        { id: 'audit', label: 'AUDIT' },
     ];
 
     const render = () => {
@@ -83,6 +85,7 @@ export const AdminPage = () => {
             case 'bans': return <AdminBans />;
             case 'players': return <AdminPlayers />;
             case 'stats': return <AdminStats />;
+            case 'audit': return <AdminAudit />;
         }
     };
 
@@ -95,7 +98,7 @@ export const AdminPage = () => {
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-4">
             <div className="flex items-center justify-between">
-                <div className="flex gap-1 border border-border font-mono text-xs">
+                <div className="flex flex-wrap gap-1 border border-border font-mono text-xs">
                     {tabs.map(t => (
                         <button
                             key={t.id}
