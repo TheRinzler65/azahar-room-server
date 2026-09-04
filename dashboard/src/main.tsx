@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { AdminPage } from './pages/AdminPage'
+import { AdminAudit } from './pages/admin/AdminAudit'
 import { PlayPage } from './pages/PlayPage'
 import { StatsPage } from './pages/StatsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/audit" element={<AdminAudit />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </ErrorBoundary>
