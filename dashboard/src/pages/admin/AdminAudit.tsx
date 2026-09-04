@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../../components/Window";
 import { API } from "../../config";
 import { authHeaders } from "../../utils/auth";
@@ -39,34 +39,34 @@ export const AdminAudit = () => {
   const getActionBadge = (action: string) => {
     if (action.startsWith("BAN_ADD")) {
       return (
-        <span className="bg-red-950/80 text-red-400 border border-red-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
+        <span className="bg-danger-950/80 text-danger-400 border border-danger-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
           BAN
         </span>
       );
     }
     if (action.startsWith("BAN_REMOVE")) {
       return (
-        <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
+        <span className="bg-success-950/80 text-success-400 border border-success-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
           UNBAN
         </span>
       );
     }
     if (action.includes("LOGIN")) {
       return (
-        <span className="bg-sky-950/80 text-sky-400 border border-sky-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
+        <span className="bg-primary-950/80 text-primary-400 border border-primary-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
           AUTH
         </span>
       );
     }
     if (action.startsWith("ROOM_")) {
       return (
-        <span className="bg-amber-950/80 text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
+        <span className="bg-warning-950/80 text-warning-400 border border-warning-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
           {action.replace("ROOM_", "")}
         </span>
       );
     }
     return (
-      <span className="bg-neutral-800 text-neutral-300 px-1.5 py-0.5 rounded text-[10px] font-bold">
+      <span className="bg-muted-800 text-muted-300 px-1.5 py-0.5 rounded text-[10px] font-bold">
         {action}
       </span>
     );
@@ -88,14 +88,14 @@ export const AdminAudit = () => {
       <div className="space-y-3 font-mono text-xs">
         <div className="flex gap-2">
           <input
-            className="bg-neutral-900 text-neutral-200 border border-border p-2 flex-1 focus:outline-none"
+            className="bg-muted-900 text-muted-200 border border-border p-2 flex-1 focus:outline-none"
             placeholder="Search logs by action, target, IP..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
           <button
             onClick={fetchLogs}
-            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 border border-border"
+            className="bg-muted-800 hover:bg-muted-700 text-muted-200 px-4 border border-border"
           >
             REFRESH
           </button>
@@ -104,7 +104,7 @@ export const AdminAudit = () => {
         <div className="border border-border overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-neutral-800 text-neutral-400 border-b border-border">
+              <tr className="bg-muted-800 text-muted-400 border-b border-border">
                 <th className="p-2 border-r border-border w-36">DATE</th>
                 <th className="p-2 border-r border-border w-24">ACTION</th>
                 <th className="p-2 border-r border-border w-40">TARGET</th>
@@ -115,13 +115,13 @@ export const AdminAudit = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-neutral-500">
+                  <td colSpan={5} className="p-4 text-center text-muted-500">
                     Loading audit logs...
                   </td>
                 </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-neutral-500">
+                  <td colSpan={5} className="p-4 text-center text-muted-500">
                     No logs found
                   </td>
                 </tr>
@@ -129,21 +129,21 @@ export const AdminAudit = () => {
                 filteredLogs.map((log, idx) => (
                   <tr
                     key={log.id || idx}
-                    className={`${idx % 2 === 0 ? "bg-neutral-900" : "bg-neutral-950"} hover:bg-neutral-800/40 border-b border-border/40`}
+                    className={`${idx % 2 === 0 ? "bg-muted-900" : "bg-muted-950"} hover:bg-muted-800/40 border-b border-border/40`}
                   >
-                    <td className="p-2 border-r border-border text-neutral-400 whitespace-nowrap">
+                    <td className="p-2 border-r border-border text-muted-400 whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
                     <td className="p-2 border-r border-border whitespace-nowrap">
                       {getActionBadge(log.action)}
                     </td>
-                    <td className="p-2 border-r border-border text-sky-400 font-bold">
+                    <td className="p-2 border-r border-border text-primary-400 font-bold">
                       {log.target || "-"}
                     </td>
-                    <td className="p-2 border-r border-border text-neutral-300 font-sans text-[11px] break-all">
+                    <td className="p-2 border-r border-border text-muted-300 font-sans text-[11px] break-all">
                       {log.details || "-"}
                     </td>
-                    <td className="p-2 text-neutral-500 text-[11px] whitespace-nowrap">
+                    <td className="p-2 text-muted-500 text-[11px] whitespace-nowrap">
                       {log.ip_address || "-"}
                     </td>
                   </tr>

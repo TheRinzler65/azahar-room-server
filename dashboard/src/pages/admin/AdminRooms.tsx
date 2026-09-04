@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../../components/Window";
 import { DataTable } from "../../components/DataTable";
 import { API } from "../../config";
@@ -158,11 +158,11 @@ export const AdminRooms = () => {
         title={`ROOM CONFIGS - ${rooms.filter((r) => r.status === "running").length} RUNNING / ${rooms.length} TOTAL`}
       >
         {msg && (
-          <div className="text-sky-400 font-mono text-xs mb-2">{msg}</div>
+          <div className="text-primary-400 font-mono text-xs mb-2">{msg}</div>
         )}
         <div className="flex gap-2 mb-3">
           <button
-            className="bg-sky-900 hover:bg-sky-800 text-sky-100 px-4 py-1.5 border border-sky-700 font-mono text-xs"
+            className="bg-primary-900 hover:bg-primary-800 text-primary-100 px-4 py-1.5 border border-primary-700 font-mono text-xs"
             onClick={() => {
               setShowForm(!showForm);
               setEditing(null);
@@ -175,25 +175,25 @@ export const AdminRooms = () => {
 
         {showForm && (
           <div className="border border-border p-3 mb-3 font-mono text-xs space-y-2">
-            <div className="text-neutral-400 mb-1">
+            <div className="text-muted-400 mb-1">
               {editing ? `EDITING: ${editing.name}` : "NEW ROOM"}
             </div>
             <div className="grid grid-cols-4 gap-2">
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Room name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Port"
                 value={form.port}
                 onChange={(e) => setForm({ ...form, port: e.target.value })}
                 disabled={!!editing}
               />
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Max players"
                 value={form.max_members}
                 onChange={(e) =>
@@ -201,7 +201,7 @@ export const AdminRooms = () => {
                 }
               />
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Game name"
                 value={form.preferred_game_name}
                 onChange={(e) =>
@@ -211,7 +211,7 @@ export const AdminRooms = () => {
             </div>
             <div className="grid grid-cols-4 gap-2">
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Game ID (hex)"
                 value={form.preferred_game_id}
                 onChange={(e) =>
@@ -219,14 +219,14 @@ export const AdminRooms = () => {
                 }
               />
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 placeholder="Description"
                 value={form.description}
                 onChange={(e) =>
                   setForm({ ...form, description: e.target.value })
                 }
               />
-              <label className="flex items-center gap-2 text-neutral-400 p-2">
+              <label className="flex items-center gap-2 text-muted-400 p-2">
                 <input
                   type="checkbox"
                   checked={form.auto_start}
@@ -237,7 +237,7 @@ export const AdminRooms = () => {
                 auto start
               </label>
               <button
-                className={`px-4 py-2 border font-mono text-xs ${editing ? "bg-amber-900 hover:bg-amber-800 text-amber-100 border-amber-700" : "bg-green-900 hover:bg-green-800 text-green-100 border-green-700"}`}
+                className={`px-4 py-2 border font-mono text-xs ${editing ? "bg-warning-900 hover:bg-warning-800 text-warning-100 border-warning-700" : "bg-success-900 hover:bg-success-800 text-success-100 border-success-700"}`}
                 onClick={editing ? update : create}
               >
                 {editing ? "UPDATE" : "CREATE"}
@@ -261,17 +261,17 @@ export const AdminRooms = () => {
             const live = liveRooms.find((l) => l.port === r.port);
             return {
               name: (
-                <span className="text-neutral-200">
+                <span className="text-muted-200">
                   {r.name}
                   {r.auto_start ? " *" : ""}
                 </span>
               ),
-              port: <span className="text-orange-400">{r.port}</span>,
+              port: <span className="text-warning-400">{r.port}</span>,
               game: (
-                <span className="text-orange-400">{r.preferred_game_name}</span>
+                <span className="text-warning-400">{r.preferred_game_name}</span>
               ),
               "game id": (
-                <span className="text-neutral-500 text-[10px]">
+                <span className="text-muted-500 text-[10px]">
                   {fromGameIdNumber(r.preferred_game_id)}
                 </span>
               ),
@@ -279,16 +279,16 @@ export const AdminRooms = () => {
                 <span
                   className={
                     r.status === "running"
-                      ? "text-green-500"
-                      : "text-neutral-500"
+                      ? "text-success-500"
+                      : "text-muted-500"
                   }
                 >
                   {r.status}
                 </span>
               ),
-              pid: <span className="text-neutral-500">{r.pid ?? "-"}</span>,
+              pid: <span className="text-muted-500">{r.pid ?? "-"}</span>,
               players: (
-                <span className="text-green-500">
+                <span className="text-success-500">
                   {live?.players?.length ?? 0} / {r.max_members}
                 </span>
               ),
@@ -296,33 +296,33 @@ export const AdminRooms = () => {
                 <div className="flex gap-2">
                   {r.status === "running" ? (
                     <button
-                      className="text-red-400 hover:text-red-300 hover:underline"
+                      className="text-danger-400 hover:text-danger-300 hover:underline"
                       onClick={() => act("POST", r.id, "/stop")}
                     >
                       [stop]
                     </button>
                   ) : (
                     <button
-                      className="text-green-400 hover:text-green-300 hover:underline"
+                      className="text-success-400 hover:text-success-300 hover:underline"
                       onClick={() => act("POST", r.id, "/start")}
                     >
                       [start]
                     </button>
                   )}
                   <button
-                    className="text-neutral-400 hover:text-neutral-200 hover:underline"
+                    className="text-muted-400 hover:text-muted-200 hover:underline"
                     onClick={() => copyAddress(r.port)}
                   >
                     [copy ip]
                   </button>
                   <button
-                    className="text-sky-400 hover:text-sky-300 hover:underline"
+                    className="text-primary-400 hover:text-primary-300 hover:underline"
                     onClick={() => startEdit(r)}
                   >
                     [edit]
                   </button>
                   <button
-                    className="text-neutral-500 hover:text-red-400 hover:underline"
+                    className="text-muted-500 hover:text-danger-400 hover:underline"
                     onClick={() => del(r.id)}
                   >
                     [del]

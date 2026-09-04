@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
@@ -16,7 +16,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
 const App = () => (
-  <div className="min-h-screen bg-main text-neutral-200 font-sans flex flex-col">
+  <div className="min-h-screen bg-main text-muted-200 font-sans flex flex-col">
     <Navbar />
     <main className="flex-1">
       <ErrorBoundary>

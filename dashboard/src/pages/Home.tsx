@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../components/Window";
 import { Skeleton, StatCardSkeleton } from "../components/Skeleton";
 import { API } from "../config";
@@ -29,7 +29,7 @@ const StatCard = ({
   color: string;
 }) => (
   <div className="border border-border bg-panel rounded-sm px-3 py-2 font-mono text-xs">
-    <div className="text-neutral-500 mb-1">{label}</div>
+    <div className="text-muted-500 mb-1">{label}</div>
     <div className={`text-lg font-bold ${color}`}>{value}</div>
   </div>
 );
@@ -94,19 +94,19 @@ export const Home = () => {
             <StatCard
               label="PLAYERS ONLINE"
               value={totalPlayers}
-              color="text-green-500"
+              color="text-success-500"
             />
             <StatCard
               label="ACTIVE ROOMS"
               value={activeRooms}
-              color="text-sky-400"
+              color="text-primary-400"
             />
             <StatCard
               label="TOP GAME"
               value={topGame}
-              color="text-orange-400"
+              color="text-warning-400"
             />
-            <StatCard label="PING" value="--" color="text-neutral-500" />
+            <StatCard label="PING" value="--" color="text-muted-500" />
           </>
         )}
       </div>
@@ -122,7 +122,7 @@ export const Home = () => {
           ) : (
             <table className="w-full text-xs text-left border-collapse border border-border font-mono">
               <thead>
-                <tr className="bg-neutral-800 text-neutral-400">
+                <tr className="bg-muted-800 text-muted-400">
                   <th className="p-2 border border-border">ROOM</th>
                   <th className="p-2 border border-border hidden sm:table-cell">
                     HOST
@@ -142,15 +142,15 @@ export const Home = () => {
                   return (
                     <tr
                       key={i}
-                      className={`${i % 2 === 0 ? "bg-neutral-900" : "bg-neutral-950"} hover:bg-sky-900/30 transition-colors`}
+                      className={`${i % 2 === 0 ? "bg-muted-900" : "bg-muted-950"} hover:bg-primary-900/30 transition-colors`}
                     >
-                      <td className="p-2 border border-border text-neutral-200 font-bold">
+                      <td className="p-2 border border-border text-muted-200 font-bold">
                         {r.name}
                       </td>
-                      <td className="p-2 border border-border text-sky-400 hidden sm:table-cell">
+                      <td className="p-2 border border-border text-primary-400 hidden sm:table-cell">
                         {r.owner || "-"}
                       </td>
-                      <td className="p-2 border border-border text-orange-400">
+                      <td className="p-2 border border-border text-warning-400">
                         {r.preferredGameName}
                       </td>
                       <td className="p-2 border border-border">
@@ -159,15 +159,15 @@ export const Home = () => {
                             r.players!.map((p, pi) => (
                               <span
                                 key={pi}
-                                className="bg-green-900/50 text-green-400 px-1.5 py-0.5 rounded text-[10px]"
+                                className="bg-success-900/50 text-success-400 px-1.5 py-0.5 rounded text-[10px]"
                               >
                                 {p.nickname || p.username || "?"}
                               </span>
                             ))
                           ) : (
-                            <span className="text-neutral-600">empty</span>
+                            <span className="text-muted-600">empty</span>
                           )}
-                          <span className="text-neutral-500 ml-1 text-[11px]">
+                          <span className="text-muted-500 ml-1 text-[11px]">
                             ({(r.players ?? []).length}/{r.maxPlayers})
                           </span>
                         </div>
@@ -177,8 +177,8 @@ export const Home = () => {
                           onClick={() => copyAddress(targetAddr, i)}
                           className={`px-3 py-1 border text-[10px] font-mono transition-colors ${
                             copiedIndex === i
-                              ? "bg-green-900/60 border-green-700 text-green-200"
-                              : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-border"
+                              ? "bg-success-900/60 border-success-700 text-success-200"
+                              : "bg-muted-800 hover:bg-muted-700 text-muted-300 border-border"
                           }`}
                           title="Copy Host:Port to clipboard"
                         >
@@ -194,7 +194,7 @@ export const Home = () => {
                   <tr>
                     <td
                       colSpan={5}
-                      className="p-4 text-center text-neutral-600 font-mono text-xs"
+                      className="p-4 text-center text-muted-600 font-mono text-xs"
                     >
                       No active rooms
                     </td>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -101,8 +101,8 @@ export const StatsView = ({ compact = false }: { compact?: boolean }) => {
           <DataTable
             columns={["GAME", "MINUTES"]}
             data={topGames.map((g) => ({
-              game: <span className="text-orange-400">{g.game}</span>,
-              minutes: <span className="text-neutral-300">{g.minutes}</span>,
+              game: <span className="text-warning-400">{g.game}</span>,
+              minutes: <span className="text-muted-300">{g.minutes}</span>,
             }))}
           />
         </Window>
@@ -110,8 +110,8 @@ export const StatsView = ({ compact = false }: { compact?: boolean }) => {
           <DataTable
             columns={["NICKNAME", "MINUTES"]}
             data={topPlayers.map((p) => ({
-              nickname: <span className="text-sky-400">{p.nickname}</span>,
-              minutes: <span className="text-neutral-300">{p.minutes}</span>,
+              nickname: <span className="text-primary-400">{p.nickname}</span>,
+              minutes: <span className="text-muted-300">{p.minutes}</span>,
             }))}
           />
         </Window>

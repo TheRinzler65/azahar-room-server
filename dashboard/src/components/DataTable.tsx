@@ -1,4 +1,4 @@
-export const DataTable = ({
+﻿export const DataTable = ({
   columns,
   data,
 }: {
@@ -7,7 +7,7 @@ export const DataTable = ({
 }) => (
   <table className="w-full text-xs text-left border-collapse border border-border">
     <thead>
-      <tr className="bg-neutral-800 text-neutral-400">
+      <tr className="bg-muted-800 text-muted-400">
         {columns.map((c: string) => (
           <th key={c} className="p-2 border border-border">
             {c}
@@ -19,7 +19,7 @@ export const DataTable = ({
       {data.map((row: any, i: number) => (
         <tr
           key={i}
-          className={`${i % 2 === 0 ? "bg-neutral-900" : "bg-neutral-950"} hover:bg-sky-900/40 cursor-pointer`}
+          className={`${i % 2 === 0 ? "bg-muted-900" : "bg-muted-950"} hover:bg-primary-900/40 cursor-pointer`}
         >
           {Object.values(row).map((val: any, j: number) => (
             <td key={j} className="p-2 border border-border">

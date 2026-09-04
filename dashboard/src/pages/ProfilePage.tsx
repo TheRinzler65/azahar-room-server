@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../components/Window";
 import { API } from "../config";
 
@@ -33,7 +33,7 @@ export const ProfilePage = () => {
 
   if (!profile)
     return (
-      <div className="p-4 font-mono text-xs text-neutral-500">
+      <div className="p-4 font-mono text-xs text-muted-500">
         {error || "Loading..."}
       </div>
     );
@@ -46,31 +46,31 @@ export const ProfilePage = () => {
       <Window title={`PROFILE: ${profile.username.toUpperCase()}`}>
         <div className="font-mono text-xs space-y-2">
           <div className="flex justify-between border-b border-border pb-2">
-            <span className="text-neutral-500">username</span>
-            <span className="text-sky-400">{profile.username}</span>
+            <span className="text-muted-500">username</span>
+            <span className="text-primary-400">{profile.username}</span>
           </div>
           <div className="flex justify-between border-b border-border pb-2">
-            <span className="text-neutral-500">citra_token</span>
-            <span className="text-neutral-300 break-all">
+            <span className="text-muted-500">citra_token</span>
+            <span className="text-muted-300 break-all">
               {profile.citraToken ? profile.citraToken : "not set"}
             </span>
           </div>
           <div className="flex justify-between border-b border-border pb-2">
-            <span className="text-neutral-500">member since</span>
-            <span className="text-neutral-300">
+            <span className="text-muted-500">member since</span>
+            <span className="text-muted-300">
               {new Date(profile.createdAt).toLocaleDateString()}
             </span>
           </div>
           <div className="flex justify-between border-b border-border pb-2">
-            <span className="text-neutral-500">playtime</span>
-            <span className="text-green-500">
+            <span className="text-muted-500">playtime</span>
+            <span className="text-success-500">
               {hours}h {mins}min
             </span>
           </div>
           <div className="pt-4">
             <button
               onClick={logout}
-              className="bg-neutral-800 hover:bg-neutral-700 text-red-400 px-4 py-2 border border-border"
+              className="bg-muted-800 hover:bg-muted-700 text-danger-400 px-4 py-2 border border-border"
             >
               LOGOUT
             </button>

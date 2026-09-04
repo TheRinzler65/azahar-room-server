@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../../components/Window";
 import { DataTable } from "../../components/DataTable";
 import { API } from "../../config";
@@ -59,13 +59,13 @@ export const AdminPlayers = () => {
       <div className="space-y-3">
         <div className="flex gap-2">
           <input
-            className="bg-neutral-900 text-neutral-200 border border-border p-2 font-mono text-xs flex-1 focus:outline-none"
+            className="bg-muted-900 text-muted-200 border border-border p-2 font-mono text-xs flex-1 focus:outline-none"
             placeholder="Search players..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button
-            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 border border-border font-mono text-xs"
+            className="bg-muted-800 hover:bg-muted-700 text-muted-200 px-4 border border-border font-mono text-xs"
             onClick={fetchPlayers}
           >
             REFRESH
@@ -73,14 +73,14 @@ export const AdminPlayers = () => {
         </div>
 
         {banTarget && (
-          <div className="border border-red-800 bg-red-950/30 p-3 font-mono text-xs space-y-3">
-            <div className="text-red-400 font-bold">
+          <div className="border border-danger-800 bg-danger-950/30 p-3 font-mono text-xs space-y-3">
+            <div className="text-danger-400 font-bold">
               BAN PLAYER: {banTarget}
             </div>
 
             <div className="flex flex-wrap gap-2">
               <select
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 focus:outline-none"
                 value={banDuration}
                 onChange={(e) => setBanDuration(Number(e.target.value))}
               >
@@ -94,7 +94,7 @@ export const AdminPlayers = () => {
               </select>
 
               <input
-                className="bg-neutral-900 text-neutral-200 border border-border p-2 flex-1 min-w-[200px] focus:outline-none"
+                className="bg-muted-900 text-muted-200 border border-border p-2 flex-1 min-w-[200px] focus:outline-none"
                 placeholder="reason (optional)"
                 value={banReason}
                 onChange={(e) => setBanReason(e.target.value)}
@@ -103,13 +103,13 @@ export const AdminPlayers = () => {
 
             <div className="flex gap-2">
               <button
-                className="bg-red-900 hover:bg-red-800 text-red-200 px-4 py-1 border border-red-700 font-bold"
+                className="bg-danger-900 hover:bg-danger-800 text-danger-200 px-4 py-1 border border-danger-700 font-bold"
                 onClick={() => banPlayer(banTarget)}
               >
                 CONFIRM BAN
               </button>
               <button
-                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-1 border border-border"
+                className="bg-muted-800 hover:bg-muted-700 text-muted-200 px-4 py-1 border border-border"
                 onClick={() => setBanTarget(null)}
               >
                 CANCEL
@@ -121,20 +121,20 @@ export const AdminPlayers = () => {
         <DataTable
           columns={["USERNAME", "REGISTERED", "PLAYTIME", ""]}
           data={filtered.map((p) => ({
-            username: <span className="text-sky-400">{p.username}</span>,
+            username: <span className="text-primary-400">{p.username}</span>,
             registered: (
-              <span className="text-neutral-400">
+              <span className="text-muted-400">
                 {new Date(p.created_at).toLocaleDateString()}
               </span>
             ),
             playtime: (
-              <span className="text-green-500">
+              <span className="text-success-500">
                 {Math.floor(p.minutes / 60)}h {Math.round(p.minutes % 60)}min
               </span>
             ),
             "": (
               <button
-                className="text-red-400 hover:text-red-300 hover:underline"
+                className="text-danger-400 hover:text-danger-300 hover:underline"
                 onClick={() => handleSelectTarget(p.username)}
               >
                 [ban]

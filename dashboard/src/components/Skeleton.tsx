@@ -1,5 +1,5 @@
-export const Skeleton = ({ className = "" }: { className?: string }) => (
-  <div className={`animate-pulse bg-neutral-800 rounded-sm ${className}`} />
+﻿export const Skeleton = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse bg-muted-800 rounded-sm ${className}`} />
 );
 
 export const StatCardSkeleton = () => (

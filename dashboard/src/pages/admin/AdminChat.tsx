@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { Window } from "../../components/Window";
 import { API } from "../../config";
 import { authHeaders } from "../../utils/auth";
@@ -113,7 +113,7 @@ export const AdminChat = () => {
       <Window title="CHAT MONITOR">
         <div className="flex gap-2 mb-3 items-center">
           <select
-            className="bg-neutral-900 text-neutral-200 border border-border p-1.5 font-mono text-xs focus:outline-none"
+            className="bg-muted-900 text-muted-200 border border-border p-1.5 font-mono text-xs focus:outline-none"
             value={selectedRoom}
             onChange={(e) => setSelectedRoom(e.target.value)}
           >
@@ -124,7 +124,7 @@ export const AdminChat = () => {
               </option>
             ))}
           </select>
-          <span className="text-neutral-500 font-mono text-xs">
+          <span className="text-muted-500 font-mono text-xs">
             {messages.length} message{messages.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -132,22 +132,22 @@ export const AdminChat = () => {
         <div className="max-h-[55vh] overflow-y-auto p-2 bg-main font-mono text-xs space-y-1 border border-border">
           {messages.map((msg, i) => (
             <div key={msg.id ?? i} className="leading-tight">
-              <span className="text-neutral-600">
+              <span className="text-muted-600">
                 [{new Date(msg.timestamp).toLocaleTimeString()}]
               </span>
-              <span className="text-sky-400 text-[10px] ml-1">
+              <span className="text-primary-400 text-[10px] ml-1">
                 ({msg.room_slug || msg.room_id})
               </span>
               <span
-                className={`ml-1 font-bold ${msg.username === "[ADMIN]" ? "text-red-400" : "text-orange-400"}`}
+                className={`ml-1 font-bold ${msg.username === "[ADMIN]" ? "text-danger-400" : "text-warning-400"}`}
               >
                 &lt;{msg.username}&gt;
               </span>
-              <span className="text-neutral-300 ml-1">{msg.message}</span>
+              <span className="text-muted-300 ml-1">{msg.message}</span>
             </div>
           ))}
           {messages.length === 0 && (
-            <div className="text-neutral-600 p-4 text-center">
+            <div className="text-muted-600 p-4 text-center">
               No messages yet
             </div>
           )}

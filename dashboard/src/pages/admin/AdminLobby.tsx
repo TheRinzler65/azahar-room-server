@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Window } from "../../components/Window";
 import { DataTable } from "../../components/DataTable";
 import { API } from "../../config";
@@ -53,7 +53,7 @@ export const AdminLobby = () => {
       >
         <div className="flex gap-2 mb-3 items-center">
           <select
-            className="bg-neutral-900 text-neutral-200 border border-border p-1.5 font-mono text-xs focus:outline-none"
+            className="bg-muted-900 text-muted-200 border border-border p-1.5 font-mono text-xs focus:outline-none"
             value={filter}
             onChange={(e) => setFilter(e.target.value as any)}
           >
@@ -62,7 +62,7 @@ export const AdminLobby = () => {
             <option value="gone">HISTORY</option>
           </select>
           <input
-            className="bg-neutral-900 text-neutral-200 border border-border p-1.5 font-mono text-xs flex-1 focus:outline-none"
+            className="bg-muted-900 text-muted-200 border border-border p-1.5 font-mono text-xs flex-1 focus:outline-none"
             placeholder="Search room name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -81,40 +81,40 @@ export const AdminLobby = () => {
             "STATUS",
           ]}
           data={filtered.map((r) => ({
-            name: <span className="text-neutral-200">{r.name}</span>,
-            owner: <span className="text-sky-400">{r.owner || "-"}</span>,
-            port: <span className="text-orange-400">{r.port}</span>,
+            name: <span className="text-muted-200">{r.name}</span>,
+            owner: <span className="text-primary-400">{r.owner || "-"}</span>,
+            port: <span className="text-warning-400">{r.port}</span>,
             game: (
-              <span className="text-orange-400">
+              <span className="text-warning-400">
                 {r.preferred_game_name || "-"}
               </span>
             ),
             "game id": (
-              <span className="text-neutral-500 text-[10px]">
+              <span className="text-muted-500 text-[10px]">
                 {r.preferred_game_id
                   ? fromGameIdNumber(r.preferred_game_id)
                   : "-"}
               </span>
             ),
-            players: <span className="text-green-500">{r.max_players}</span>,
+            players: <span className="text-success-500">{r.max_players}</span>,
             password: (
               <span
                 className={
-                  r.has_password ? "text-orange-400" : "text-neutral-600"
+                  r.has_password ? "text-warning-400" : "text-muted-600"
                 }
               >
                 {r.has_password ? "yes" : "no"}
               </span>
             ),
             "last seen": (
-              <span className="text-neutral-500 text-[10px]">
+              <span className="text-muted-500 text-[10px]">
                 {new Date(r.last_seen).toLocaleString()}
               </span>
             ),
             status: (
               <span
                 className={
-                  r.status === "live" ? "text-green-500" : "text-neutral-500"
+                  r.status === "live" ? "text-success-500" : "text-muted-500"
                 }
               >
                 {r.status}
@@ -123,7 +123,7 @@ export const AdminLobby = () => {
           }))}
         />
         {filtered.length === 0 && (
-          <div className="text-neutral-600 p-4 text-center font-mono text-xs">
+          <div className="text-muted-600 p-4 text-center font-mono text-xs">
             No rooms
           </div>
         )}
