@@ -7,7 +7,9 @@ import {
 export interface Room {
   id: string;
   guid?: string;
+  verifyUID?: string;
   name: string;
+  description?: string;
   port: number;
   maxPlayers: number;
   preferredGameName: string;

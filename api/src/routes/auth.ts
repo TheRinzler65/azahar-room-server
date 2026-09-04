@@ -45,7 +45,7 @@ router.post("/jwt/external/:audience", async (req, res) => {
       sub: authResult.username,
       displayName: authResult.username,
       iss: "citra-core",
-      aud: audience,
+      aud: `external-${audience}`,
       jti: crypto.randomUUID(),
     },
     privateKey,

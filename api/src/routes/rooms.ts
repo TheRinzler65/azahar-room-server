@@ -49,12 +49,24 @@ router.post("/lobby", async (req, res) => {
     ...roomData,
     id,
     guid: id,
+    verifyUID: roomData.verify_UID || generateId(),
     externalGuid: id,
-    address: process.env.PUBLIC_ADDRESS || "rinzler-azahar.duckdns.org",
+    name: roomData.name || "Room",
+    port: roomData.port || 0,
+    maxPlayers: roomData.max_player ?? roomData.maxPlayers ?? 0,
+    netVersion: roomData.net_version ?? roomData.netVersion ?? 0,
+    hasPassword: roomData.has_password ?? roomData.hasPassword ?? false,
+    preferredGameName: roomData.preferred_game || roomData.preferredGameName || "",
+    preferredGameId: roomData.preferred_game_id ?? roomData.preferredGameId ?? 0,
+    description: roomData.description || "",
+    address:
+      roomData.address ||
+      process.env.PUBLIC_ADDRESS ||
+      "rinzler-azahar.duckdns.org",
     owner: username || "server",
     createdAt: Date.now(),
     lastUpdate: Date.now(),
-    players: roomData.players || [],
+    players: roomData.members || roomData.players || [],
   };
 
   rooms.push(newRoom);
@@ -67,7 +79,21 @@ router.post("/lobby", async (req, res) => {
   notifyDiscord(
     `🆕 Room **${newRoom.name}** created by ${newRoom.owner} (${newRoom.players.length}/${newRoom.maxPlayers} players)`,
   );
-  res.json(newRoom);
+  res.json({
+    id: newRoom.id,
+    verify_UID: newRoom.verifyUID,
+    name: newRoom.name,
+    description: roomData.description || "",
+    owner: newRoom.owner,
+    ip: newRoom.address,
+    port: newRoom.port,
+    max_player: newRoom.maxPlayers,
+    net_version: newRoom.netVersion,
+    has_password: newRoom.hasPassword,
+    preferred_game: newRoom.preferredGameName,
+    preferred_game_id: newRoom.preferredGameId,
+    members: newRoom.players,
+  });
 });
 
 router.post("/lobby/:id", async (req, res) => {
@@ -117,8 +143,25 @@ router.get("/lobby", async (req, res) => {
   }
 
   setRooms(rooms.filter((r) => Date.now() - r.lastUpdate < 120000));
+  const live = rooms.filter((r) => Date.now() - r.lastUpdate < 120000);
   res.setHeader("Content-Type", "application/json");
-  res.json({ rooms });
+  res.json({
+    rooms: live.map((r) => ({
+      id: r.id,
+      verify_UID: r.verifyUID || r.id,
+      name: r.name,
+      description: r.description || "",
+      owner: r.owner,
+      ip: r.address,
+      port: r.port,
+      max_player: r.maxPlayers,
+      net_version: r.netVersion,
+      has_password: r.hasPassword,
+      preferred_game: r.preferredGameName,
+      preferred_game_id: r.preferredGameId,
+      members: r.players || [],
+    })),
+  });
 });
 
 export default router;
