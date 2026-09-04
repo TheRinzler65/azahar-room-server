@@ -6,6 +6,7 @@ import { findUserByUsername, createUser, countReports, addReport, deleteReports,
 import { addBan } from '../db/bans';
 import { hashPassword, signPlayerJWT, privateKey, publicKey, checkAuth, isAdmin } from '../middleware/auth';
 import { notifyDiscord } from '../utils/discord';
+import { registerSchema, loginSchema } from '../schemas/auth';
 
 const router = Router();
 
@@ -52,29 +53,42 @@ router.post('/jwt/internal', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).send('username and password required');
-    if (username.length < 3) return res.status(400).send('username too short (min 3)');
+    const parseResult = registerSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        const firstIssue = parseResult.error.issues[0];
+        return res.status(400).send(firstIssue?.message || 'Invalid registration data');
+    }
+
+    const { username, password, email } = parseResult.data;
 
     const existing = await findUserByUsername(username);
-    if (existing) return res.status(409).send('Username already taken');
+    if (existing) {
+        return res.status(409).send('Username already taken');
+    }
 
     const hash = hashPassword(password);
     const token = crypto.randomBytes(16).toString('hex');
     
-    await createUser(username, '', hash, token);
+    await createUser(username, email || '', hash, token);
 
     console.log(`[Player] Registered: ${username}`);
     res.json({ token: signPlayerJWT(username), username, citraToken: token });
 });
 
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await findUserByUsername(username || '');
+    const parseResult = loginSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        const firstIssue = parseResult.error.issues[0];
+        return res.status(400).send(firstIssue?.message || 'Invalid login data');
+    }
+
+    const { username, password } = parseResult.data;
+    const user = await findUserByUsername(username);
     
-    if (!user || !bcrypt.compareSync(password || '', user.hash)) {
+    if (!user || !bcrypt.compareSync(password, user.hash)) {
         return res.status(401).send('Invalid credentials');
     }
+
     res.json({ token: signPlayerJWT(user.username), username: user.username });
 });
 
