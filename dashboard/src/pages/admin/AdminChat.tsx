@@ -22,8 +22,6 @@ export const AdminChat = () => {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [rooms, setRooms] = useState<RoomConfig[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<string>("");
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
   const selectedRoomRef = useRef(selectedRoom);
   selectedRoomRef.current = selectedRoom;
 
@@ -110,27 +108,6 @@ export const AdminChat = () => {
     };
   }, [selectedRoom]);
 
-  const send = async () => {
-    if (!input.trim() || !selectedRoom) return;
-    setSending(true);
-    const room = rooms.find((r) => r.slug === selectedRoom);
-    const slug = room?.slug || selectedRoom;
-    await fetch(`${API}/admin/chat/${slug}`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ message: input.trim() }),
-    });
-    setInput("");
-    setSending(false);
-  };
-
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  };
-
   return (
     <div className="space-y-3">
       <Window title="CHAT MONITOR">
@@ -175,26 +152,6 @@ export const AdminChat = () => {
             </div>
           )}
         </div>
-
-        {selectedRoom && (
-          <div className="flex gap-2 mt-2">
-            <input
-              className="bg-neutral-900 text-neutral-200 border border-border p-2 font-mono text-xs flex-1 focus:outline-none"
-              placeholder={`Message to ${selectedRoom}...`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              disabled={sending}
-            />
-            <button
-              className="bg-red-900 hover:bg-red-800 text-red-200 px-4 border border-red-700 font-mono text-xs disabled:opacity-50"
-              onClick={send}
-              disabled={sending || !input.trim()}
-            >
-              SEND
-            </button>
-          </div>
-        )}
       </Window>
     </div>
   );

@@ -16,14 +16,12 @@ import {
 import {
   listChatMessages,
   listChatMessagesByRoom,
-  addChatMessage,
 } from "../db/chat";
 import { syncBanFile } from "../utils/banfile";
 import { startRoom, stopRoom, isRunning } from "../roomManager";
 import { listAllUsers } from "../db/users";
-import { broadcastChat, broadcastNotification } from "../ws";
+import { broadcastNotification } from "../ws";
 import { listLobbyRooms } from "../db/lobby";
-import { listChatMessagesByRoomId } from "../db/chat";
 import { logAdminAction, listAuditLogs } from "../db/audit";
 import { notifyBan, notifyRoomStatus } from "../utils/discord";
 
@@ -211,20 +209,6 @@ router.get("/admin/chat", async (req, res) => {
   res.json(messages);
 });
 
-router.post("/admin/chat/:roomSlug", async (req, res) => {
-  if (!isAdmin(req)) return res.status(401).send("Unauthorized");
-  const { roomSlug } = req.params;
-  const { message } = req.body;
-  if (!message || typeof message !== "string" || !message.trim()) {
-    return res.status(400).send("message required");
-  }
-  const cleanMessage = message.trim().slice(0, 500);
-  await addChatMessage(null, roomSlug, "[ADMIN]", cleanMessage);
-  console.log(`[Admin] Chat in ${roomSlug}: ${cleanMessage}`);
-  broadcastChat(roomSlug, null, "[ADMIN]", cleanMessage, Date.now());
-  res.json({ success: true });
-});
-
 router.get("/admin/players", async (req, res) => {
   if (!isAdmin(req)) return res.status(401).send("Unauthorized");
   const players = await listAllUsers();
@@ -236,17 +220,6 @@ router.get("/admin/lobby-rooms", async (req, res) => {
   const status = req.query.status as "live" | "gone" | undefined;
   const rows = await listLobbyRooms(status);
   res.json(rows);
-});
-
-router.get("/admin/lobby-rooms/:id/chat", async (req, res) => {
-  if (!isAdmin(req)) return res.status(401).send("Unauthorized");
-  const { id } = req.params;
-  const messages = await listChatMessagesByRoomId(
-    id,
-    parseInt(String(req.query.limit || "200"), 10),
-  );
-  messages.reverse();
-  res.json(messages);
 });
 
 router.get("/admin/rooms", async (req, res) => {

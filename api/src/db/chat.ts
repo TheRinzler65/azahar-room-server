@@ -50,23 +50,3 @@ export async function listChatMessagesByRoom(
   );
   return rows as unknown as any[];
 }
-
-export async function listChatMessagesByRoomId(
-  roomId: string,
-  limit: number = 200,
-): Promise<
-  {
-    id: number;
-    room_id: string | null;
-    room_slug: string | null;
-    username: string;
-    message: string;
-    timestamp: number;
-  }[]
-> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM chat_messages WHERE room_id = ? ORDER BY timestamp DESC LIMIT ?",
-    [roomId, Math.min(limit, 2000)],
-  );
-  return rows as unknown as any[];
-}

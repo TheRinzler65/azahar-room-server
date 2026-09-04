@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Window } from "../../components/Window";
 import { DataTable } from "../../components/DataTable";
 import { API } from "../../config";
@@ -20,38 +20,10 @@ interface LobbyRoom {
   status: string;
 }
 
-interface ChatMsg {
-  id?: number;
-  room_slug?: string | null;
-  username: string;
-  message: string;
-  timestamp: number;
-}
-
-interface RoomConfig {
-  id: number;
-  name: string;
-  slug: string;
-  port: number;
-}
-
 export const AdminLobby = () => {
   const [rooms, setRooms] = useState<LobbyRoom[]>([]);
-  const [configs, setConfigs] = useState<RoomConfig[]>([]);
   const [filter, setFilter] = useState<"live" | "all" | "gone">("all");
-  const [selected, setSelected] = useState<LobbyRoom | null>(null);
-  const [chat, setChat] = useState<ChatMsg[]>([]);
   const [search, setSearch] = useState("");
-  const [chatSource, setChatSource] = useState("");
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  const stopPoll = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
 
   const fetchRooms = () => {
     const url =
@@ -65,50 +37,10 @@ export const AdminLobby = () => {
   };
 
   useEffect(() => {
-    fetch(`${API}/admin/rooms`, { headers: authHeaders() })
-      .then((res) => res.json())
-      .then(setConfigs)
-      .catch(console.error);
     fetchRooms();
     const interval = setInterval(fetchRooms, 10000);
     return () => clearInterval(interval);
   }, [filter]);
-
-  useEffect(() => () => stopPoll(), []);
-
-  useEffect(() => {
-    if (selected && chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chat, selected]);
-
-  const loadChat = (lobby: LobbyRoom) => {
-    stopPoll();
-    setSelected(lobby);
-
-    const cfg = configs.find((c) => c.port === lobby.port);
-    const targetIdentifier = cfg ? cfg.slug : lobby.id;
-    setChatSource(targetIdentifier);
-
-    const load = () => {
-      fetch(
-        `${API}/admin/chat?room=${encodeURIComponent(targetIdentifier)}&limit=200`,
-        { headers: authHeaders() },
-      )
-        .then((res) => res.json())
-        .then(setChat)
-        .catch(console.error);
-    };
-
-    load();
-    pollRef.current = setInterval(load, 3000);
-  };
-
-  const closeChat = () => {
-    stopPoll();
-    setSelected(null);
-    setChat([]);
-  };
 
   const filtered = rooms.filter((r) =>
     r.name.toLowerCase().includes(search.toLowerCase()),
@@ -147,7 +79,6 @@ export const AdminLobby = () => {
             "PASSWORD",
             "LAST SEEN",
             "STATUS",
-            "",
           ]}
           data={filtered.map((r) => ({
             name: <span className="text-neutral-200">{r.name}</span>,
@@ -189,14 +120,6 @@ export const AdminLobby = () => {
                 {r.status}
               </span>
             ),
-            "": (
-              <button
-                className="text-sky-400 hover:underline"
-                onClick={() => loadChat(r)}
-              >
-                [view]
-              </button>
-            ),
           }))}
         />
         {filtered.length === 0 && (
@@ -205,46 +128,6 @@ export const AdminLobby = () => {
           </div>
         )}
       </Window>
-
-      {selected && (
-        <Window title={`LIVE CHAT - ${selected.name.toUpperCase()}`}>
-          <div className="max-h-[50vh] overflow-y-auto p-2 bg-main font-mono text-xs space-y-1 border border-border">
-            {chatSource && (
-              <div className="text-neutral-600 pb-1 border-b border-border">
-                Source: {chatSource}
-              </div>
-            )}
-            {chat.map((msg, i) => (
-              <div
-                key={msg.id ?? `${msg.timestamp}-${i}`}
-                className="leading-tight"
-              >
-                <span className="text-neutral-600">
-                  [{new Date(msg.timestamp).toLocaleTimeString()}]
-                </span>
-                <span className="ml-1 font-bold text-sky-400">
-                  &lt;{msg.username}&gt;
-                </span>
-                <span className="text-neutral-200 ml-1">{msg.message}</span>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-            {chat.length === 0 && (
-              <div className="text-neutral-600 p-4 text-center">
-                No messages recorded
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              className="text-neutral-500 hover:text-neutral-300 font-mono text-xs"
-              onClick={closeChat}
-            >
-              [close]
-            </button>
-          </div>
-        </Window>
-      )}
     </div>
   );
 };
