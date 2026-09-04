@@ -45,14 +45,17 @@ export const AdminChat = () => {
                 .catch(console.error);
         };
         fetchChat();
-        // Live updates via WebSocket (fallback to polling if ws unavailable)
+
         let ws: WebSocket | null = null;
         let alive = true;
+        let reconnectTimer: number | null = null;
+
         const connectWs = () => {
             if (!alive) return;
             try {
                 const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
                 ws = new WebSocket(`${proto}://${window.location.host}/ws`);
+
                 ws.onmessage = (e) => {
                     try {
                         const data = JSON.parse(e.data);
@@ -60,20 +63,49 @@ export const AdminChat = () => {
                             const filter = selectedRoomRef.current;
                             if (!filter || data.roomSlug === filter) {
                                 setMessages(prev => [...prev.slice(-200), {
-                                    id: data.timestamp, room_id: data.roomId, room_slug: data.roomSlug,
-                                    username: data.username, message: data.message, timestamp: data.timestamp
+                                    id: data.timestamp,
+                                    room_id: data.roomId,
+                                    room_slug: data.roomSlug,
+                                    username: data.username,
+                                    message: data.message,
+                                    timestamp: data.timestamp,
                                 }]);
                             }
                         }
                     } catch {}
                 };
-                ws.onclose = () => { if (alive) setTimeout(connectWs, 3000); };
-                ws.onerror = () => { ws?.close(); };
+
+                ws.onclose = () => {
+                    if (alive) {
+                        reconnectTimer = window.setTimeout(connectWs, 3000);
+                    }
+                };
+
+                ws.onerror = () => {
+                };
             } catch {}
         };
+
         connectWs();
         const interval = setInterval(fetchChat, 5000);
-        return () => { alive = false; clearInterval(interval); if (ws) ws.close(); };
+
+        return () => {
+            alive = false;
+            clearInterval(interval);
+            if (reconnectTimer !== null) {
+                window.clearTimeout(reconnectTimer);
+            }
+
+            if (ws) {
+                if (ws.readyState === WebSocket.CONNECTING) {
+                    ws.onopen = () => {
+                        ws?.close();
+                    };
+                } else if (ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+            }
+        };
     }, [selectedRoom]);
 
     const send = async () => {
@@ -84,14 +116,17 @@ export const AdminChat = () => {
         await fetch(`${API}/admin/chat/${slug}`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ message: input.trim() })
+            body: JSON.stringify({ message: input.trim() }),
         });
         setInput('');
         setSending(false);
     };
 
     const handleKey = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            send();
+        }
     };
 
     return (
