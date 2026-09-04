@@ -49,24 +49,25 @@ router.post("/lobby", async (req, res) => {
     ...roomData,
     id,
     guid: id,
-    verifyUID: roomData.verify_UID || generateId(),
+    verifyUID: roomData.externalGuid || generateId(),
     externalGuid: id,
     name: roomData.name || "Room",
     port: roomData.port || 0,
-    maxPlayers: roomData.max_player ?? roomData.maxPlayers ?? 0,
-    netVersion: roomData.net_version ?? roomData.netVersion ?? 0,
-    hasPassword: roomData.has_password ?? roomData.hasPassword ?? false,
-    preferredGameName: roomData.preferred_game || roomData.preferredGameName || "",
-    preferredGameId: roomData.preferred_game_id ?? roomData.preferredGameId ?? 0,
+    maxPlayers: roomData.maxPlayers ?? roomData.max_player ?? 0,
+    netVersion: roomData.netVersion ?? roomData.net_version ?? 0,
+    hasPassword: roomData.hasPassword ?? roomData.has_password ?? false,
+    preferredGameName: roomData.preferredGameName || roomData.preferred_game || "",
+    preferredGameId: roomData.preferredGameId ?? roomData.preferred_game_id ?? 0,
     description: roomData.description || "",
     address:
       roomData.address ||
+      roomData.ip ||
       process.env.PUBLIC_ADDRESS ||
       "rinzler-azahar.duckdns.org",
-    owner: username || "server",
+    owner: username || roomData.owner || "server",
     createdAt: Date.now(),
     lastUpdate: Date.now(),
-    players: roomData.members || roomData.players || [],
+    players: roomData.players || roomData.members || [],
   };
 
   rooms.push(newRoom);
@@ -81,18 +82,23 @@ router.post("/lobby", async (req, res) => {
   );
   res.json({
     id: newRoom.id,
-    verify_UID: newRoom.verifyUID,
+    externalGuid: newRoom.verifyUID,
     name: newRoom.name,
-    description: roomData.description || "",
+    description: newRoom.description || "",
     owner: newRoom.owner,
+    address: newRoom.address,
     ip: newRoom.address,
     port: newRoom.port,
+    maxPlayers: newRoom.maxPlayers,
     max_player: newRoom.maxPlayers,
+    netVersion: newRoom.netVersion,
     net_version: newRoom.netVersion,
+    hasPassword: newRoom.hasPassword,
     has_password: newRoom.hasPassword,
-    preferred_game: newRoom.preferredGameName,
-    preferred_game_id: newRoom.preferredGameId,
+    preferredGameName: newRoom.preferredGameName,
+    preferredGameId: newRoom.preferredGameId,
     members: newRoom.players,
+    players: newRoom.players,
   });
 });
 
@@ -148,18 +154,24 @@ router.get("/lobby", async (req, res) => {
   res.json({
     rooms: live.map((r) => ({
       id: r.id,
+      externalGuid: r.verifyUID || r.id,
       verify_UID: r.verifyUID || r.id,
       name: r.name,
       description: r.description || "",
       owner: r.owner,
+      address: r.address,
       ip: r.address,
       port: r.port,
+      maxPlayers: r.maxPlayers,
       max_player: r.maxPlayers,
+      netVersion: r.netVersion,
       net_version: r.netVersion,
+      hasPassword: r.hasPassword,
       has_password: r.hasPassword,
-      preferred_game: r.preferredGameName,
-      preferred_game_id: r.preferredGameId,
+      preferredGameName: r.preferredGameName,
+      preferredGameId: r.preferredGameId,
       members: r.players || [],
+      players: r.players || [],
     })),
   });
 });
