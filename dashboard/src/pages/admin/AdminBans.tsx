@@ -9,6 +9,7 @@ interface BanDetail {
     reason?: string;
     banned_by?: string;
     created_at: number;
+    expires_at?: number | null;
 }
 
 interface Bans {
@@ -22,6 +23,7 @@ export const AdminBans = () => {
     const [value, setValue] = useState('');
     const [type, setType] = useState<'username' | 'ip'>('username');
     const [reason, setReason] = useState('');
+    const [durationMinutes, setDurationMinutes] = useState<number>(0);
     const [msg, setMsg] = useState('');
 
     const fetchBans = () => {
@@ -38,10 +40,16 @@ export const AdminBans = () => {
         const res = await fetch(`${API}/admin/ban`, {
             method: 'POST',
             headers: authHeaders(),
-            body: JSON.stringify({ type, value: value.trim(), reason: reason.trim() || undefined })
+            body: JSON.stringify({
+                type,
+                value: value.trim(),
+                reason: reason.trim() || undefined,
+                durationMinutes: durationMinutes > 0 ? durationMinutes : undefined,
+            })
         });
         if (res.ok) {
-            setMsg(`Banned: ${value}${reason ? ` (${reason})` : ''}`);
+            const durText = durationMinutes > 0 ? ` [${durationMinutes}m]` : ' [perm]';
+            setMsg(`Banned: ${value}${durText}${reason ? ` (${reason})` : ''}`);
             setValue('');
             setReason('');
             fetchBans();
@@ -62,10 +70,22 @@ export const AdminBans = () => {
     const findDetail = (type: string, value: string) =>
         bans.details.find(d => d.type === type && d.value === value);
 
+    const formatExpiry = (expiresAt?: number | null) => {
+        if (!expiresAt) return <span className="text-amber-500/80 text-[10px]">permanent</span>;
+        const diffMs = expiresAt - Date.now();
+        if (diffMs <= 0) return <span className="text-neutral-500 text-[10px]">expiré</span>;
+        const diffMin = Math.round(diffMs / 60000);
+        if (diffMin < 60) return <span className="text-sky-400 text-[10px]">exp: ~{diffMin}m</span>;
+        const diffHours = Math.round(diffMin / 60);
+        if (diffHours < 24) return <span className="text-sky-400 text-[10px]">exp: ~{diffHours}h</span>;
+        const diffDays = Math.round(diffHours / 24);
+        return <span className="text-sky-400 text-[10px]">exp: ~{diffDays}j</span>;
+    };
+
     return (
         <Window title="BAN MANAGEMENT">
             <div className="space-y-4 font-mono text-xs">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <select
                         className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
                         value={type}
@@ -75,12 +95,25 @@ export const AdminBans = () => {
                         <option value="ip">ip</option>
                     </select>
                     <input
-                        className="bg-neutral-900 text-neutral-200 border border-border p-2 w-full focus:outline-none"
+                        className="bg-neutral-900 text-neutral-200 border border-border p-2 flex-1 min-w-[140px] focus:outline-none"
                         placeholder="target..."
                         value={value}
                         onChange={e => setValue(e.target.value)}
                     />
-                    <button className="bg-red-900 hover:bg-red-800 text-red-200 px-4 border border-red-700" onClick={ban}>
+                    <select
+                        className="bg-neutral-900 text-neutral-200 border border-border p-2 focus:outline-none"
+                        value={durationMinutes}
+                        onChange={e => setDurationMinutes(Number(e.target.value))}
+                    >
+                        <option value={0}>Permanent</option>
+                        <option value={15}>15 minutes</option>
+                        <option value={60}>1 heure</option>
+                        <option value={1440}>24 heures</option>
+                        <option value={4320}>3 jours</option>
+                        <option value={10080}>7 jours</option>
+                        <option value={43200}>30 jours</option>
+                    </select>
+                    <button className="bg-red-900 hover:bg-red-800 text-red-200 px-4 border border-red-700 font-bold" onClick={ban}>
                         BAN
                     </button>
                 </div>
@@ -100,11 +133,14 @@ export const AdminBans = () => {
                             {bans.usernames.map((u, i) => {
                                 const detail = findDetail('username', u);
                                 return (
-                                    <div key={i} className="p-0.5 flex justify-between items-center">
+                                    <div key={i} className="p-0.5 flex justify-between items-start">
                                         <div className="flex flex-col">
                                             <span>{u}</span>
-                                            {detail?.reason && <span className="text-neutral-500 text-[10px]">reason: {detail.reason}</span>}
-                                            {detail?.banned_by && <span className="text-neutral-600 text-[10px]">by: {detail.banned_by}</span>}
+                                            <div className="flex gap-2 items-center">
+                                                {formatExpiry(detail?.expires_at)}
+                                                {detail?.reason && <span className="text-neutral-500 text-[10px]">reason: {detail.reason}</span>}
+                                                {detail?.banned_by && <span className="text-neutral-600 text-[10px]">by: {detail.banned_by}</span>}
+                                            </div>
                                         </div>
                                         <button onClick={() => unban('username', u)} className="text-neutral-500 hover:text-neutral-300 ml-2">[x]</button>
                                     </div>
@@ -119,11 +155,14 @@ export const AdminBans = () => {
                             {bans.ips.map((u, i) => {
                                 const detail = findDetail('ip', u);
                                 return (
-                                    <div key={i} className="p-0.5 flex justify-between items-center">
+                                    <div key={i} className="p-0.5 flex justify-between items-start">
                                         <div className="flex flex-col">
                                             <span>{u}</span>
-                                            {detail?.reason && <span className="text-neutral-500 text-[10px]">reason: {detail.reason}</span>}
-                                            {detail?.banned_by && <span className="text-neutral-600 text-[10px]">by: {detail.banned_by}</span>}
+                                            <div className="flex gap-2 items-center">
+                                                {formatExpiry(detail?.expires_at)}
+                                                {detail?.reason && <span className="text-neutral-500 text-[10px]">reason: {detail.reason}</span>}
+                                                {detail?.banned_by && <span className="text-neutral-600 text-[10px]">by: {detail.banned_by}</span>}
+                                            </div>
                                         </div>
                                         <button onClick={() => unban('ip', u)} className="text-neutral-500 hover:text-neutral-300 ml-2">[x]</button>
                                     </div>

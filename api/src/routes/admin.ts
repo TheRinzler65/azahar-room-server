@@ -69,15 +69,18 @@ router.get('/admin/bans', async (req, res) => {
 
 router.post('/admin/ban', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).send('Unauthorized');
-    const { type, value, reason } = req.body;
+    const { type, value, reason, durationMinutes, duration } = req.body;
 
     if (!type || !value) return res.status(400).send('type and value required');
 
+    const minutes = durationMinutes !== undefined ? Number(durationMinutes) : (duration !== undefined ? Number(duration) : undefined);
+
     try {
-        await addBan(type, value, reason, 'admin');
+        await addBan(type, value, reason, 'admin', minutes);
         await syncBanFile();
-        console.log(`[Admin] Banned ${type}: ${value}`);
-        broadcastNotification(`Banned ${type}: ${value}${reason ? ` (${reason})` : ''}`);
+        const durationText = minutes && minutes > 0 ? ` for ${minutes} minute(s)` : ' (permanent)';
+        console.log(`[Admin] Banned ${type}: ${value}${durationText}`);
+        broadcastNotification(`Banned ${type}: ${value}${durationText}${reason ? ` (${reason})` : ''}`);
         res.json({ success: true });
     } catch (e: any) {
         res.status(500).send(e.message);
@@ -94,6 +97,7 @@ router.delete('/admin/ban', async (req, res) => {
         await removeBan(type, value);
         await syncBanFile();
         console.log(`[Admin] Unbanned ${type}: ${value}`);
+        broadcastNotification(`Unbanned ${type}: ${value}`);
         res.json({ success: true });
     } catch (e: any) {
         res.status(500).send(e.message);
