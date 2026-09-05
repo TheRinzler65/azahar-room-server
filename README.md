@@ -18,6 +18,22 @@ A Node.js/TypeScript API + a React admin dashboard for managing rooms, players, 
 
 ---
 
+## Room types: how hosting works
+
+Two ways a room can exist on the network — do not confuse them:
+
+- **Player-hosted room (P2P)** — created from *inside the emulator* via `Multiplayer → Host Room / Create Room`. The emulator opens a UDP port **on the host's own machine** and announces it to the lobby. Other players join the host **directly** (`host_ip:port`). This only works over the internet if the host's router forwards that UDP port AND the host has a public IP. On a home connection behind CGNAT it will not work at all. The `Port` field in the emulator dialog is the local port on the host's machine — it is **not** a server port.
+
+- **Server-hosted room (dedicated)** — created from the **dashboard admin** (`Admin → Rooms`, port + config). The API spawns the headless `azahar-room` binary **on the server** with `--port`. The binary announces itself to the lobby with the public address, so **everyone on the internet can join** through the port-forwarded public IP. This is the correct way to host on a cloud server.
+
+Rule of thumb: visualising rooms is P2P and works from the emulator's *Browse Public Room*; **joining** from a different network requires either forwarded UDP on the host's router (player-hosted) or a dedicated server room.
+
+### Port allocation (dedicated server rooms)
+
+Each dedicated room consumes **one UDP port on the server**, chosen from the range you configured in your network's port-forwarding rules. Assign ports manually: 1 port = 1 room, reuse the range when you run out. Adding more rooms means adding NAT/forward rules for the new ports — a room on a port that is not forwarded will not be joinable from the internet.
+
+---
+
 ## Tech stack
 
 | Layer         | Tech                                 |

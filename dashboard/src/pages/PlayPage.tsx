@@ -97,6 +97,17 @@ export const PlayPage = () => {
             </span>{" "}
             in Azahar.
           </div>
+          <div className="text-muted-500 bg-muted-900/60 border border-border p-2">
+            Rooms listed here are hosted by our dedicated server and reachable
+            from anywhere on the internet.{" "}
+            <span className="text-warning-400">
+              Note: room visible does not mean joinable.
+            </span>{" "}
+            A room created from inside the emulator ("Host Room") is hosted on
+            the creator's own machine — it appears in Browse Public Rooms, but
+            you can only join it if the host is on your network or has its UDP
+            port forwarded publicly.
+          </div>
 
           {loadingRooms ? (
             <div className="text-muted-500 py-3">Scanning active rooms...</div>
