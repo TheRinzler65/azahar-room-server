@@ -32,7 +32,7 @@ async function generateVersion() {
       version = `dev-${shortCommit}`;
     }
   } catch (e) {
-    console.warn("Impossible de récupérer les tags GitHub, utilisation d'une version de secours.", e);
+    console.warn("Could not fetch GitHub tags, using a fallback version.", e);
     try {
       const fallbackCommit = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
       version = `dev-${fallbackCommit}`;
@@ -44,7 +44,6 @@ async function generateVersion() {
   const envPath = path.resolve(process.cwd(), ".env");
   let envContent = "";
 
-  // Lire le contenu actuel du .env s'il existe déjà
   if (fs.existsSync(envPath)) {
     envContent = fs.readFileSync(envPath, "utf-8");
   }
@@ -58,7 +57,7 @@ async function generateVersion() {
   }
 
   fs.writeFileSync(envPath, envContent);
-  console.log(`[Version Generator] Version générée et injectée : ${version}`);
+  console.log(`[Version Generator] Version generated and injected: ${version}`);
 }
 
 generateVersion();

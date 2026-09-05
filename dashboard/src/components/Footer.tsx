@@ -16,7 +16,7 @@ export const Footer = () => {
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <span className="text-muted-400">AZAHAR ROOM SERVER</span>
           <span className="hidden sm:inline text-muted-700">|</span>
-          <span>v1.0.0</span>
+          <span>version: {import.meta.env.VITE_APP_VERSION || "version: dev"}</span>
         </div>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <a
